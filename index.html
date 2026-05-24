@@ -170,6 +170,8 @@ header {
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn.active { background: var(--primary); color: #fff; }
 .icon-btn .material-symbols-rounded { font-size: 24px; }
+.icon-btn:disabled { color: rgba(42,45,63,0.25); cursor: not-allowed; }
+.icon-btn:disabled:hover { background: transparent; color: rgba(42,45,63,0.25); }
 
 /* ── Dropdown ── */
 .dropdown-wrap { position: relative; }
@@ -402,20 +404,65 @@ input[type="range"]::-moz-range-thumb {
   pointer-events: none;
 }
 
+.write-panel-header {
+  position: sticky;
+  top: 10px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+  padding: 0 16px;
+  margin-top: 10px;
+  pointer-events: none;
+}
+.write-panel-header .write-panel-label {
+  position: static;
+  margin: 0;
+}
+.load-original-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--primary);
+  background: var(--surface);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(91,141,239,0.18);
+}
+.load-original-btn:hover { background: var(--primary); color: #fff; }
+.load-original-btn:active { transform: scale(0.96); }
+.load-original-btn .material-symbols-rounded { font-size: 16px; }
+
 svg.score-canvas {
   display: block;
-  cursor: crosshair;
+  cursor: text;
   background: var(--surface);
   user-select: none;
 }
 
-/* Block cursor states — visible grab/grabbing on hover/drag */
-.block-group { cursor: grab; }
-.block-group:hover .block-hitbox { cursor: grab; }
-.block-group.dragging,
-.block-group.dragging .block-hitbox { cursor: grabbing !important; }
-svg.score-canvas.dragging-active { cursor: grabbing; }
-.block-hitbox { cursor: grab; }
+/* Block cursor states — explicit grab/grabbing on the block and its hitbox.
+   Use !important to override the SVG's crosshair default. */
+svg.score-canvas .block-group,
+svg.score-canvas .block-group .block-hitbox,
+svg.score-canvas .block-group * { cursor: grab !important; }
+svg.score-canvas .block-group.dragging,
+svg.score-canvas .block-group.dragging .block-hitbox,
+svg.score-canvas .block-group.dragging * { cursor: grabbing !important; }
+svg.score-canvas.dragging-active,
+svg.score-canvas.dragging-active * { cursor: grabbing !important; }
+
+/* Resize handles override grab */
+svg.score-canvas .sel-overlay [data-handle="left"],
+svg.score-canvas .sel-overlay [data-handle="right"] { cursor: ew-resize !important; }
+svg.score-canvas .sel-overlay [data-handle="slide-end"] { cursor: ns-resize !important; }
 
 /* Marquee selection rect */
 .marquee-rect {
@@ -832,6 +879,14 @@ footer a:hover { color: var(--primary); }
 
     <div class="header-spacer"></div>
 
+    <!-- Undo / Redo -->
+    <button class="icon-btn" id="btn-undo" title="실행 취소 (Ctrl+Z)" data-i18n-title="undoTitle" disabled>
+      <span class="material-symbols-rounded">undo</span>
+    </button>
+    <button class="icon-btn" id="btn-redo" title="다시 실행 (Ctrl+Shift+Z)" data-i18n-title="redoTitle" disabled>
+      <span class="material-symbols-rounded">redo</span>
+    </button>
+
     <!-- Help -->
     <button class="icon-btn" id="btn-help" title="도움말">
       <span class="material-symbols-rounded">help</span>
@@ -1030,7 +1085,13 @@ footer a:hover { color: var(--primary); }
       </div>
       <!-- Bottom: new lyrics -->
       <div class="canvas-wrapper write-bottom" id="write-bottom-wrap">
-        <div class="write-panel-label" data-i18n="newLyrics">새 가사</div>
+        <div class="write-panel-header">
+          <div class="write-panel-label" data-i18n="newLyrics">새 가사</div>
+          <button class="load-original-btn" id="btn-load-original" title="원곡 가사를 새 가사로 복사" data-i18n-title="loadOriginalTitle">
+            <span class="material-symbols-rounded">south</span>
+            <span data-i18n="loadOriginal">원곡 가사 불러오기</span>
+          </button>
+        </div>
         <svg class="score-canvas" id="write-svg-bottom" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="dots-write" patternUnits="userSpaceOnUse" width="20" height="20">
@@ -1075,12 +1136,14 @@ footer a:hover { color: var(--primary); }
       </button>
     </div>
     <ul class="help-list" id="help-list">
-      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요.</div></li>
-      <li><div class="help-num">2</div><div data-i18n="help2">글자 블록을 더블클릭하거나 ✎ 편집 버튼으로 수정할 수 있고, 빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택할 수 있어요.</div></li>
-      <li><div class="help-num">3</div><div data-i18n="help3">글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.</div></li>
-      <li><div class="help-num">4</div><div data-i18n="help4">상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.</div></li>
-      <li><div class="help-num">5</div><div data-i18n="help5">마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.</div></li>
-      <li><div class="help-num">6</div><div data-i18n="help6">저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.</div></li>
+      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바로 다음 칸, Enter로 마침이에요.</div></li>
+      <li><div class="help-num">2</div><div data-i18n="help2">글자 블록을 더블클릭하거나 ✎ 편집 버튼으로 텍스트를 수정해요. 위아래 드래그로 음높이, 양옆 핸들로 길이를 조절해요.</div></li>
+      <li><div class="help-num">3</div><div data-i18n="help3">빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택할 수 있어요. Shift+클릭으로 선택 추가, Ctrl/⌘+A로 전체 선택해요.</div></li>
+      <li><div class="help-num">4</div><div data-i18n="help4">선택한 글자는 Ctrl/⌘+C로 복사, Ctrl/⌘+V로 붙여넣기 할 수 있어요. 키보드 화살표로 미세 이동도 가능해요.</div></li>
+      <li><div class="help-num">5</div><div data-i18n="help5">실수했을 땐 Ctrl/⌘+Z로 되돌리고, Ctrl/⌘+Shift+Z로 다시 실행해요. 헤더의 ↶↷ 버튼도 같은 기능이에요.</div></li>
+      <li><div class="help-num">6</div><div data-i18n="help6">상단 슬라이드 버튼은 미끄러지는 음(글라이드), 마디 +/- 버튼은 곡의 길이를 조절해요.</div></li>
+      <li><div class="help-num">7</div><div data-i18n="help7">'가사 쓰기' 탭에선 '원곡 가사 불러오기' 버튼으로 원곡 가사를 그대로 가져온 뒤 텍스트만 바꿔 쓸 수 있어요.</div></li>
+      <li><div class="help-num">8</div><div data-i18n="help8">💾 저장으로 JSON에 저장하고, 🔗 공유로 이미지·링크를 내보낼 수 있어요.</div></li>
     </ul>
   </div>
 </div>
@@ -1107,18 +1170,28 @@ const TRANSLATIONS = {
     saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
     helpTitle: '사용 방법', exampleBtn: '예시 보기',
-    help1: '빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바를 누르면 블록이 완성되고 다음 칸으로 이동해요.',
-    help2: '글자 블록을 더블클릭하거나 상단 도구막대의 ✎ 편집 버튼을 누르면 텍스트를 수정할 수 있어요. 빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택해 같이 옮기거나 일괄 수정할 수 있어요.',
-    help3: '글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.',
-    help4: '상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.',
-    help5: '마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.',
-    help6: '저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.',
+    help1: '빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바로 다음 칸, Enter로 마침이에요.',
+    help2: '글자 블록을 더블클릭하거나 ✎ 편집 버튼으로 텍스트를 수정해요. 위아래 드래그로 음높이, 양옆 핸들로 길이를 조절해요.',
+    help3: '빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택할 수 있어요. Shift+클릭으로 선택 추가, Ctrl/⌘+A로 전체 선택해요.',
+    help4: '선택한 글자는 Ctrl/⌘+C로 복사, Ctrl/⌘+V로 붙여넣기 할 수 있어요. 키보드 화살표로 미세 이동도 가능해요.',
+    help5: '실수했을 땐 Ctrl/⌘+Z로 되돌리고, Ctrl/⌘+Shift+Z로 다시 실행해요. 헤더의 ↶↷ 버튼도 같은 기능이에요.',
+    help6: '상단 슬라이드 버튼은 미끄러지는 음(글라이드), 마디 +/- 버튼은 곡의 길이를 조절해요.',
+    help7: "'가사 쓰기' 탭에선 '원곡 가사 불러오기' 버튼으로 원곡 가사를 그대로 가져온 뒤 텍스트만 바꿔 쓸 수 있어요.",
+    help8: '💾 저장으로 JSON에 저장하고, 🔗 공유로 이미지·링크를 내보낼 수 있어요.',
     originalScore: '원곡 악보', newLyrics: '새 가사',
     fontSize: '크기', color: '색', slide: '슬라이드', editText: '편집',
     inputHint: '스페이스로 완성 · Enter로 마침 · Esc로 취소',
+    loadOriginal: '원곡 가사 불러오기',
+    loadOriginalTitle: '원곡 가사를 새 가사로 복사',
+    confirmOverwriteNew: '새 가사가 이미 있습니다. 덮어쓸까요?',
     toastCopied: '클립보드에 복사됐어요!', toastSaved: '저장됐어요!', toastLoaded: '불러왔어요!',
     toastLinkCopied: '링크가 복사됐어요!', toastImgCopied: '이미지가 복사됐어요!',
-    toastExample: '예시 악보를 불러왔어요!'
+    toastExample: '예시 악보를 불러왔어요!',
+    toastBlocksCopied: '%n개 복사됨', toastBlocksPasted: '%n개 붙여넣음',
+    toastLoadOriginal: '원곡 가사 %n개를 불러왔어요!',
+    toastUndo: '실행 취소', toastRedo: '다시 실행',
+    toastNoOriginal: '원곡 악보에 가사가 없어요',
+    undoTitle: '실행 취소 (Ctrl+Z)', redoTitle: '다시 실행 (Ctrl+Shift+Z)'
   },
   en: {
     appTitle: 'Easy Score',
@@ -1128,15 +1201,25 @@ const TRANSLATIONS = {
     saveJson: 'Save as JSON', loadJson: 'Load JSON',
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
     helpTitle: 'How to use', exampleBtn: 'Show example',
-    help1: 'Click the canvas to type lyrics at that spot. Space confirms the block and moves to the next position.',
-    help2: 'Double-click a block, or use the ✎ Edit button in the top toolbar, to change its text. Drag on the empty canvas to select multiple blocks at once for bulk move or styling.',
-    help3: 'Drag a block up/down for pitch; drag side handles to stretch for held notes.',
-    help4: 'Toggle the slide button to show a gliding note on a curve.',
-    help5: 'Use the measure +/- buttons to add/remove measures. Scroll left/right for longer songs.',
-    help6: 'Save as JSON or copy the share link to restore your work anywhere.',
+    help1: 'Click the canvas to type lyrics at that spot. Space moves to the next position, Enter finishes.',
+    help2: 'Double-click a block or use the ✎ Edit button to change its text. Drag a block up/down for pitch; drag side handles to stretch for held notes.',
+    help3: 'Drag on empty canvas to select multiple blocks at once. Shift+click to add to the selection, Ctrl/⌘+A to select all.',
+    help4: 'Copy selected blocks with Ctrl/⌘+C, paste with Ctrl/⌘+V. Use arrow keys (with Shift for larger steps) to nudge selection.',
+    help5: 'Undo with Ctrl/⌘+Z and redo with Ctrl/⌘+Shift+Z. The ↶↷ buttons in the header do the same.',
+    help6: 'The slide toggle draws a gliding note as a curve. Use the measure +/- buttons to set song length.',
+    help7: 'In the Write tab, "Copy original lyrics" duplicates the original score into the new-lyrics panel so you only need to change the text.',
+    help8: 'Use 💾 Save for JSON, and 🔗 Share for image export or a shareable link.',
     originalScore: 'Original', newLyrics: 'New lyrics',
     fontSize: 'Size', color: 'Color', slide: 'Slide', editText: 'Edit',
     inputHint: 'Space to confirm · Enter to finish · Esc to cancel',
+    loadOriginal: 'Copy original lyrics',
+    loadOriginalTitle: 'Copy original lyrics to the new-lyrics panel',
+    confirmOverwriteNew: 'The new-lyrics panel already has blocks. Overwrite them?',
+    toastBlocksCopied: '%n block(s) copied', toastBlocksPasted: '%n block(s) pasted',
+    toastLoadOriginal: 'Loaded %n original block(s)',
+    toastUndo: 'Undo', toastRedo: 'Redo',
+    toastNoOriginal: 'The original score has no lyrics yet',
+    undoTitle: 'Undo (Ctrl+Z)', redoTitle: 'Redo (Ctrl+Shift+Z)',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
     toastExample: 'Example loaded!'
@@ -1149,15 +1232,25 @@ const TRANSLATIONS = {
     saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
     helpTitle: '使い方', exampleBtn: '例を見る',
-    help1: 'キャンバスをクリックするとその場所に歌詞を入力できます。スペースキーでブロックが確定し次の位置に移動します。',
-    help2: 'ブロックをダブルクリック、または上部ツールバーの ✎ 編集ボタンでテキストを修正できます。空白部分をドラッグすると複数のブロックをまとめて選択し移動・一括編集できます。',
-    help3: 'ブロックを上下にドラッグで音の高さ、左右ハンドルで長く伸ばす音を表現できます。',
-    help4: 'スライドボタンをオンにすると、なめらかな音を曲線で表現できます。',
-    help5: '小節 +/- ボタンで曲の長さを調整。左右スクロールで長い曲も作れます。',
-    help6: 'JSON保存または共有リンクで他のデバイスでも作業を復元できます。',
+    help1: 'キャンバスをクリックするとその場所に歌詞を入力できます。スペースで次の位置、Enterで終了します。',
+    help2: 'ブロックをダブルクリック、または ✎ 編集ボタンでテキストを修正できます。上下ドラッグで音の高さ、左右ハンドルで長さを調整します。',
+    help3: '空白部分をドラッグすると複数のブロックをまとめて選択できます。Shift+クリックで追加、Ctrl/⌘+A で全選択。',
+    help4: '選択したブロックは Ctrl/⌘+C でコピー、Ctrl/⌘+V で貼り付け。矢印キー(Shiftで大きく)で微調整できます。',
+    help5: '間違えたら Ctrl/⌘+Z で元に戻し、Ctrl/⌘+Shift+Z でやり直し。ヘッダーの ↶↷ ボタンも同じです。',
+    help6: 'スライドボタンはなめらかな音(グライド)、小節 +/- ボタンは曲の長さを調整します。',
+    help7: '「歌詞を書く」タブでは「原曲歌詞を読込」ボタンで原曲を複製し、テキストだけ書き換えられます。',
+    help8: '💾 保存で JSON、🔗 共有で画像・リンク出力ができます。',
     originalScore: '原曲', newLyrics: '新しい歌詞',
     fontSize: 'サイズ', color: '色', slide: 'スライド', editText: '編集',
     inputHint: 'スペースで確定・Enterで終了・Escで取消',
+    loadOriginal: '原曲歌詞を読込',
+    loadOriginalTitle: '原曲歌詞を新しい歌詞欄に複製',
+    confirmOverwriteNew: '新しい歌詞欄に既に内容があります。上書きしますか？',
+    toastBlocksCopied: '%n個コピー', toastBlocksPasted: '%n個ペースト',
+    toastLoadOriginal: '原曲ブロック%n個を読み込みました',
+    toastUndo: '元に戻す', toastRedo: 'やり直し',
+    toastNoOriginal: '原曲にまだ歌詞がありません',
+    undoTitle: '元に戻す (Ctrl+Z)', redoTitle: 'やり直し (Ctrl+Shift+Z)',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
     toastExample: 'サンプルを読み込みました！'
@@ -1173,6 +1266,9 @@ function applyI18n() {
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
   });
   document.documentElement.lang = lang;
   // Logo title — Korean uses Black Han Sans, English/Japanese uses Pretendard GOV bold
@@ -1429,6 +1525,7 @@ function makeSvgBlock(block) {
     bbox.setAttribute('x', x); bbox.setAttribute('y', bboxTop);
     bbox.setAttribute('width', rw); bbox.setAttribute('height', fs + Math.abs(dy));
     bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
+    bbox.setAttribute('pointer-events','all');
     g.appendChild(bbox);
   } else {
     const textEl = document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -1443,6 +1540,7 @@ function makeSvgBlock(block) {
     bbox.setAttribute('x', x); bbox.setAttribute('y', y - fs);
     bbox.setAttribute('width', rw); bbox.setAttribute('height', fs * 1.3);
     bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
+    bbox.setAttribute('pointer-events','all');
     g.appendChild(bbox);
   }
   return g;
@@ -1661,6 +1759,7 @@ function setupSvgInteraction(svgEl, panel) {
       if (!block) return;
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
       const handleType = handle.dataset.handle;
+      beginHistory();
       dragState = {
         type: handleType === 'left' ? 'left-handle' : handleType === 'slide-end' ? 'slide-end' : 'right-handle',
         blockId: selectedId,
@@ -1704,6 +1803,7 @@ function setupSvgInteraction(svgEl, panel) {
           id: sid, origX: bb.x, origY: bb.y, origW: bb.width
         });
       });
+      beginHistory();
       dragState = {
         type: 'move-multi', blockId: id,
         startX: pt.x, startY: pt.y,
@@ -1711,6 +1811,7 @@ function setupSvgInteraction(svgEl, panel) {
       };
       blockGroup.classList.add('dragging');
       svgEl.classList.add('dragging-active');
+      document.body.style.cursor = 'grabbing';
       svgEl.setPointerCapture(e.pointerId);
       e.stopPropagation(); return;
     }
@@ -1787,6 +1888,7 @@ function setupSvgInteraction(svgEl, panel) {
   svgEl.addEventListener('pointerup', (e) => {
     if (!dragState) return;
     svgEl.classList.remove('dragging-active');
+    document.body.style.cursor = '';
     svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
 
     if (dragState.type === 'marquee') {
@@ -1795,6 +1897,11 @@ function setupSvgInteraction(svgEl, panel) {
         // Treat as plain click on empty area → deselect
         if (!dragState.shift) deselectAll();
       }
+      cancelHistory(); // marquee doesn't mutate state
+    } else if (hasDragged) {
+      commitHistory();
+    } else {
+      cancelHistory(); // tap-without-drag on a block: no state change
     }
     dragState = null;
   });
@@ -2047,6 +2154,10 @@ function commitTextInput(andThenContinue = false) {
                            : DEFAULT_FONT_SIZE;
   let lastBlock = null;
 
+  // Snapshot for undo: any time text input actually changes state
+  const willMutate = editingBlock || (val !== '');
+  if (willMutate) pushHistory();
+
   if (editingBlock) {
     if (val === '') {
       state.blocks = state.blocks.filter(b => b.id !== editingBlock.id);
@@ -2175,21 +2286,27 @@ function forEachSelected(fn) {
   });
 }
 
+// Slider: snapshot on first 'input' of an interaction, commit on 'change' (release)
 selFontSize.addEventListener('input', () => {
+  beginHistory();
   selFsVal.textContent = selFontSize.value;
   const v = parseInt(selFontSize.value);
   forEachSelected(b => { b.fontSize = v; });
   renderBlocks(); positionSelToolbar();
 });
+selFontSize.addEventListener('change', () => commitHistory());
 
 selColor.addEventListener('input', () => {
+  beginHistory();
   forEachSelected(b => { b.color = selColor.value; });
   renderBlocks();
 });
+selColor.addEventListener('change', () => commitHistory());
 
 document.querySelectorAll('.color-swatch').forEach(sw => {
   sw.addEventListener('click', () => {
     if (selectedIds.size === 0) return;
+    pushHistory();
     const c = sw.dataset.color;
     forEachSelected(b => { b.color = c; });
     selColor.value = c;
@@ -2201,6 +2318,7 @@ document.querySelectorAll('.color-swatch').forEach(sw => {
 
 selSlideToggle.addEventListener('click', () => {
   if (selectedIds.size === 0) return;
+  pushHistory();
   // Decide target state from primary block, then apply to all
   const primary = state.blocks.find(b => b.id === selectedId);
   const target = primary ? !primary.slide : true;
@@ -2212,6 +2330,7 @@ selSlideToggle.addEventListener('click', () => {
 
 selDelBtn.addEventListener('click', () => {
   if (selectedIds.size === 0) return;
+  pushHistory();
   const ids = new Set(selectedIds);
   state.blocks = state.blocks.filter(b => !ids.has(b.id));
   deselectAll();
@@ -2221,6 +2340,8 @@ selDelBtn.addEventListener('click', () => {
 
 if (selFont) {
   selFont.addEventListener('change', () => {
+    if (selectedIds.size === 0) return;
+    pushHistory();
     const v = selFont.value;
     forEachSelected(b => { b.font = v; });
     renderBlocks();
@@ -2350,12 +2471,13 @@ function setMeasures(n) {
 }
 
 measurePlusBtn.addEventListener('click', () => {
+  pushHistory();
   setMeasures(state.measures + 1);
   // Scroll down to reveal the newly added row
   const wrapper = (currentTab === 'learn' ? learnSvg : writeSvgBot).parentElement;
   if (wrapper) wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: 'smooth' });
 });
-measureMinusBtn.addEventListener('click', () => setMeasures(state.measures - 1));
+measureMinusBtn.addEventListener('click', () => { pushHistory(); setMeasures(state.measures - 1); });
 
 /* ══════════════════════════════════════════════════════
    Song Title
@@ -2436,6 +2558,7 @@ fileInput.addEventListener('change', (e) => {
   reader.onload = (ev) => {
     try {
       const loaded = JSON.parse(ev.target.result);
+      pushHistory();
       applyLoadedState(loaded);
       showToast(t('toastLoaded'));
     } catch { alert('Invalid JSON'); }
@@ -2604,6 +2727,7 @@ function loadExample() {
 }
 
 document.getElementById('btn-example').addEventListener('click', () => {
+  pushHistory();
   loadExample();
   helpModal.classList.remove('open');
   showToast(t('toastExample'));
@@ -2621,6 +2745,196 @@ function showToast(msg) {
   toastTimeout = setTimeout(() => el.classList.remove('show'), 2400);
 }
 
+function tWithCount(key, n) {
+  return t(key).replace('%n', n);
+}
+
+/* ══════════════════════════════════════════════════════
+   History (Undo / Redo) — Canva-style per-action snapshots
+   - One action = one undo step.
+   - For continuous interactions (drag, slider), call beginHistory()
+     at start of the action and the snapshot is taken once. Subsequent
+     calls are no-ops until commitHistory() (on release) clears the lock.
+   - For instant actions (delete, paste, slide toggle, swatch click)
+     just call pushHistory() before mutating state.
+══════════════════════════════════════════════════════ */
+const HISTORY_MAX = 80;
+let historyStack = [];
+let redoStack = [];
+let _historyLockSnap = null;
+
+function snapshotState() {
+  return JSON.stringify({
+    blocks: state.blocks,
+    measures: state.measures,
+    lineCount: state.lineCount,
+    spaceMode: state.spaceMode,
+    songTitle: state.songTitle,
+    nextId
+  });
+}
+
+function applySnapshot(json) {
+  const snap = JSON.parse(json);
+  state.blocks    = snap.blocks;
+  state.measures  = snap.measures;
+  state.lineCount = snap.lineCount;
+  state.spaceMode = snap.spaceMode;
+  state.songTitle = snap.songTitle;
+  nextId          = snap.nextId;
+  // UI sync
+  document.getElementById('song-title').value = state.songTitle;
+  lineCountSlider.value = state.lineCount;
+  lineCountVal.textContent = state.lineCount;
+  if (state.spaceMode === 'guide') {
+    document.getElementById('mode-guide').classList.add('active');
+    document.getElementById('mode-free').classList.remove('active');
+    document.getElementById('line-count-group').style.display = 'flex';
+  } else {
+    document.getElementById('mode-free').classList.add('active');
+    document.getElementById('mode-guide').classList.remove('active');
+    document.getElementById('line-count-group').style.display = 'none';
+  }
+  // Drop selection of blocks that no longer exist
+  const aliveIds = new Set(state.blocks.map(b => b.id));
+  selectedIds.forEach(id => { if (!aliveIds.has(id)) selectedIds.delete(id); });
+  if (selectedId !== null && !aliveIds.has(selectedId)) {
+    selectedId = selectedIds.size > 0 ? selectedIds.values().next().value : null;
+  }
+  if (selectedIds.size === 0) selToolbar.classList.remove('active');
+  updateCanvasSize();
+  renderAllGuideLines();
+  renderBlocks();
+  updateMeasureUI();
+  updateEmptyHint();
+}
+
+function pushHistory() {
+  historyStack.push(snapshotState());
+  if (historyStack.length > HISTORY_MAX) historyStack.shift();
+  redoStack.length = 0;
+  updateHistoryButtons();
+}
+
+function beginHistory() {
+  if (_historyLockSnap === null) _historyLockSnap = snapshotState();
+}
+function commitHistory(forceIfUnchanged) {
+  if (_historyLockSnap === null) return;
+  const cur = snapshotState();
+  if (forceIfUnchanged || cur !== _historyLockSnap) {
+    historyStack.push(_historyLockSnap);
+    if (historyStack.length > HISTORY_MAX) historyStack.shift();
+    redoStack.length = 0;
+    updateHistoryButtons();
+  }
+  _historyLockSnap = null;
+}
+function cancelHistory() { _historyLockSnap = null; }
+
+function undo() {
+  if (historyStack.length === 0) return;
+  redoStack.push(snapshotState());
+  const prev = historyStack.pop();
+  applySnapshot(prev);
+  updateHistoryButtons();
+}
+function redo() {
+  if (redoStack.length === 0) return;
+  historyStack.push(snapshotState());
+  const next = redoStack.pop();
+  applySnapshot(next);
+  updateHistoryButtons();
+}
+
+function updateHistoryButtons() {
+  const ub = document.getElementById('btn-undo');
+  const rb = document.getElementById('btn-redo');
+  if (ub) ub.disabled = historyStack.length === 0;
+  if (rb) rb.disabled = redoStack.length === 0;
+}
+
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-redo').addEventListener('click', redo);
+
+/* ══════════════════════════════════════════════════════
+   Clipboard (in-app copy / paste)
+══════════════════════════════════════════════════════ */
+let clipboard = []; // deep-copies of blocks (without id / panel)
+
+function copySelectedBlocks() {
+  if (selectedIds.size === 0) return false;
+  const picked = state.blocks.filter(b => selectedIds.has(b.id));
+  if (picked.length === 0) return false;
+  clipboard = picked.map(b => JSON.parse(JSON.stringify(b)));
+  showToast(tWithCount('toastBlocksCopied', clipboard.length));
+  return true;
+}
+
+function pasteClipboard() {
+  if (clipboard.length === 0) return false;
+  pushHistory();
+  const targetPanel = (currentTab === 'learn') ? 'original' : 'new';
+  const OFFSET_X = 30;             // canonical units offset on paste
+  const OFFSET_Y = 18 / ROW_HEIGHT; // fraction-of-row offset
+
+  const newIds = new Set();
+  let firstId = null;
+  clipboard.forEach(src => {
+    const nb = JSON.parse(JSON.stringify(src));
+    nb.id = nextId++;
+    nb.panel = targetPanel;
+    nb.x = nb.x + OFFSET_X;
+    // Clamp x to canvas
+    const maxX = state.measures * CANONICAL_MW - (nb.width || 30);
+    if (nb.x > maxX) nb.x = Math.max(0, maxX);
+    if (nb.x < 0) nb.x = 0;
+    const minYFrac = CANVAS_PAD_TOP / ROW_HEIGHT;
+    const maxYFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (nb.fontSize || DEFAULT_FONT_SIZE)) / ROW_HEIGHT;
+    nb.y = Math.max(minYFrac, Math.min(maxYFrac, (nb.y || 0) + OFFSET_Y));
+    state.blocks.push(nb);
+    if (firstId === null) firstId = nb.id;
+    newIds.add(nb.id);
+  });
+  selectedIds = newIds;
+  selectedId = firstId;
+  renderBlocks();
+  updateEmptyHint();
+  const primary = state.blocks.find(b => b.id === selectedId);
+  if (primary) updateSelToolbar(primary);
+  showToast(tWithCount('toastBlocksPasted', newIds.size));
+  return true;
+}
+
+/* ══════════════════════════════════════════════════════
+   Load original lyrics into the new-lyrics panel
+══════════════════════════════════════════════════════ */
+function loadOriginalToNew() {
+  const originals = state.blocks.filter(b => b.panel === 'original');
+  if (originals.length === 0) {
+    showToast(t('toastNoOriginal'));
+    return;
+  }
+  const hasNew = state.blocks.some(b => b.panel === 'new');
+  if (hasNew) {
+    if (!confirm(t('confirmOverwriteNew'))) return;
+  }
+  pushHistory();
+  state.blocks = state.blocks.filter(b => b.panel !== 'new');
+  originals.forEach(o => {
+    const nb = JSON.parse(JSON.stringify(o));
+    nb.id = nextId++;
+    nb.panel = 'new';
+    state.blocks.push(nb);
+  });
+  deselectAll();
+  renderBlocks();
+  updateEmptyHint();
+  showToast(tWithCount('toastLoadOriginal', originals.length));
+}
+
+document.getElementById('btn-load-original').addEventListener('click', loadOriginalToNew);
+
 /* Canvas size is driven by state.measures, not by container size,
    so no ResizeObserver is needed for guide line redraws. */
 
@@ -2631,14 +2945,85 @@ document.addEventListener('keydown', (e) => {
   if (e.target === textInputEl) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
+  const mod = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
+
+  // Undo / Redo (Canva: Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z, Cmd/Ctrl+Y)
+  if (mod && key === 'z' && !e.shiftKey) {
+    undo(); e.preventDefault(); return;
+  }
+  if (mod && (key === 'y' || (key === 'z' && e.shiftKey))) {
+    redo(); e.preventDefault(); return;
+  }
+
+  // Copy / Cut / Paste
+  if (mod && key === 'c') {
+    if (copySelectedBlocks()) e.preventDefault();
+    return;
+  }
+  if (mod && key === 'x') {
+    if (selectedIds.size > 0) {
+      copySelectedBlocks();
+      pushHistory();
+      const ids = new Set(selectedIds);
+      state.blocks = state.blocks.filter(b => !ids.has(b.id));
+      deselectAll(); renderBlocks(); updateEmptyHint();
+      e.preventDefault();
+    }
+    return;
+  }
+  if (mod && key === 'v') {
+    if (pasteClipboard()) e.preventDefault();
+    return;
+  }
+
+  // Select all (Cmd/Ctrl+A) → all blocks in the active panel
+  if (mod && key === 'a') {
+    const targetPanel = (currentTab === 'learn') ? 'original' : 'new';
+    selectedIds = new Set(state.blocks.filter(b => b.panel === targetPanel).map(b => b.id));
+    selectedId = selectedIds.size > 0 ? selectedIds.values().next().value : null;
+    renderBlocks();
+    if (selectedIds.size > 0) {
+      const primary = state.blocks.find(b => b.id === selectedId);
+      if (primary) updateSelToolbar(primary);
+    }
+    e.preventDefault();
+    return;
+  }
+
   if (selectedIds.size > 0) {
     // Delete/Backspace → remove all selected blocks
     if (e.key === 'Delete' || e.key === 'Backspace') {
+      pushHistory();
       const ids = new Set(selectedIds);
       state.blocks = state.blocks.filter(b => !ids.has(b.id));
       deselectAll(); renderBlocks(); updateEmptyHint();
       e.preventDefault(); return;
     }
+
+    // Arrow-key nudge for selected blocks (Shift = larger step)
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      pushHistory();
+      const stepX = (e.shiftKey ? 20 : 4);
+      const stepYFrac = (e.shiftKey ? 20 : 4) / ROW_HEIGHT;
+      const mpr = getMeasuresPerRow();
+      const rowW = mpr * CANONICAL_MW;
+      const minYFrac = CANVAS_PAD_TOP / ROW_HEIGHT;
+      selectedIds.forEach(id => {
+        const b = state.blocks.find(bb => bb.id === id);
+        if (!b) return;
+        if (e.key === 'ArrowLeft')  b.x = Math.max(Math.floor(b.x / rowW) * rowW, b.x - stepX);
+        if (e.key === 'ArrowRight') b.x = Math.min((Math.floor(b.x / rowW) + 1) * rowW - (b.width || 30), b.x + stepX);
+        const maxYFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || DEFAULT_FONT_SIZE)) / ROW_HEIGHT;
+        if (e.key === 'ArrowUp')   b.y = Math.max(minYFrac, b.y - stepYFrac);
+        if (e.key === 'ArrowDown') b.y = Math.min(maxYFrac, b.y + stepYFrac);
+      });
+      renderBlocks();
+      positionSelToolbar();
+      e.preventDefault();
+      return;
+    }
+
     const block = state.blocks.find(b => b.id === selectedId);
     if (block) {
       // F2 or Enter → open edit mode for the primary selection
