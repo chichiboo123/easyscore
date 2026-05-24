@@ -10,7 +10,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gaegu:wght@300;400;700&family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Zen+Maru+Gothic:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gaegu:wght@300;400;700&family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Zen+Maru+Gothic:wght@300;400;500&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo&family=Dongle:wght@300;400;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded" rel="stylesheet">
 
 <!-- Pretendard GOV (Korean public-sector variant of Pretendard) -->
@@ -749,6 +749,23 @@ footer a:hover { color: var(--primary); }
 .color-swatch:hover { transform: scale(1.15); }
 .color-swatch.selected { border-color: var(--ink); transform: scale(1.1); }
 
+/* ── Font selector in toolbar ── */
+.font-select {
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  min-width: 130px;
+  transition: border-color 0.15s;
+}
+.font-select:focus { border-color: var(--primary); }
+
 /* ── Responsive: small screens (tablets/phones) ── */
 @media (max-width: 720px) {
   html, body { font-size: 14px; }
@@ -890,6 +907,21 @@ footer a:hover { color: var(--primary); }
       </div>
     </div>
 
+    <!-- Row height toggle -->
+    <div class="ctrl-group">
+      <span class="ctrl-label">줄 높이</span>
+      <div class="toggle-group">
+        <button class="toggle-btn" id="height-narrow" title="좁게">
+          <span class="material-symbols-rounded">density_small</span>
+          <span>좁게</span>
+        </button>
+        <button class="toggle-btn active" id="height-normal" title="현재">
+          <span class="material-symbols-rounded">density_medium</span>
+          <span>현재</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Song title -->
     <div class="ctrl-group" style="margin-left: auto;">
       <input type="text" class="title-input" id="song-title" placeholder="노래 제목" data-i18n-placeholder="songTitlePlaceholder">
@@ -902,7 +934,7 @@ footer a:hover { color: var(--primary); }
     <div id="learn-canvas-wrap" class="canvas-wrapper">
       <div class="canvas-empty-hint" id="learn-empty-hint">
         <span class="material-symbols-rounded">edit_note</span>
-        <p>더블클릭하면 가사를 입력할 수 있어요</p>
+        <p>클릭하면 가사를 입력할 수 있어요</p>
       </div>
       <svg class="score-canvas" id="learn-svg" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -972,6 +1004,16 @@ footer a:hover { color: var(--primary); }
     <input type="color" id="sel-color" value="#2A2D3F" title="커스텀 색상">
   </div>
 
+  <span class="sel-ctrl-label">폰트</span>
+  <select id="sel-font" class="font-select">
+    <option value="Pretendard GOV">Pretendard GOV</option>
+    <option value="Gaegu">Gaegu (손글씨)</option>
+    <option value="Noto Sans KR">Noto Sans KR</option>
+    <option value="Nanum Myeongjo">나눔명조</option>
+    <option value="Dongle">Dongle</option>
+    <option value="Black Han Sans">블랙 한 산스</option>
+  </select>
+
   <button class="slide-toggle-btn" id="sel-slide-toggle">
     <span class="material-symbols-rounded">trending_down</span>
     <span data-i18n="slide">슬라이드</span>
@@ -1029,15 +1071,15 @@ const TRANSLATIONS = {
     saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
     helpTitle: '사용 방법', exampleBtn: '예시 보기',
-    help1: '빈 캔버스를 더블클릭하면 그 자리에 가사를 쓸 수 있어요. (Enter로 확정)',
-    help2: '띄어쓰기로 글자를 나누면 글자 묶음(블록)이 자동으로 만들어져요. 예) "반짝 반짝 작은 별" → 4개 블록',
+    help1: '빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바를 누르면 블록이 완성되고 다음 칸으로 이동해요.',
+    help2: '글자 블록을 더블클릭하면 편집할 수 있어요. Tab 키로도 다음 칸으로 이동해요.',
     help3: '글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.',
     help4: '상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.',
     help5: '마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.',
     help6: '저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.',
     originalScore: '원곡 악보', newLyrics: '새 가사',
     fontSize: '크기', color: '색', slide: '슬라이드',
-    inputHint: 'Enter로 확정 · Esc로 취소 · 띄어쓰기로 글자 묶음 나누기',
+    inputHint: '스페이스로 완성 · Enter로 마침 · Esc로 취소',
     toastCopied: '클립보드에 복사됐어요!', toastSaved: '저장됐어요!', toastLoaded: '불러왔어요!',
     toastLinkCopied: '링크가 복사됐어요!', toastImgCopied: '이미지가 복사됐어요!',
     toastExample: '예시 악보를 불러왔어요!'
@@ -1050,15 +1092,15 @@ const TRANSLATIONS = {
     saveJson: 'Save as JSON', loadJson: 'Load JSON',
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
     helpTitle: 'How to use', exampleBtn: 'Show example',
-    help1: 'Double-click the canvas to type lyrics at that spot. (Enter to confirm)',
-    help2: 'Spaces split your text into separate blocks. E.g. "Twin kle twin kle" → 4 blocks',
+    help1: 'Click the canvas to type lyrics at that spot. Space confirms the block and moves to the next position.',
+    help2: 'Double-click an existing block to edit it. Tab also moves to the next position.',
     help3: 'Drag a block up/down for pitch; drag side handles to stretch for held notes.',
     help4: 'Toggle the slide button to show a gliding note on a curve.',
     help5: 'Use the measure +/- buttons to add/remove measures. Scroll left/right for longer songs.',
     help6: 'Save as JSON or copy the share link to restore your work anywhere.',
     originalScore: 'Original', newLyrics: 'New lyrics',
     fontSize: 'Size', color: 'Color', slide: 'Slide',
-    inputHint: 'Enter to confirm · Esc to cancel · Space splits into blocks',
+    inputHint: 'Space to confirm · Enter to finish · Esc to cancel',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
     toastExample: 'Example loaded!'
@@ -1071,15 +1113,15 @@ const TRANSLATIONS = {
     saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
     helpTitle: '使い方', exampleBtn: '例を見る',
-    help1: 'キャンバスをダブルクリックすると、その場所に歌詞を入力できます。',
-    help2: 'スペースで区切ると、自動的に文字ブロックに分かれます。例)「きら きら ひかる」→ 3ブロック',
+    help1: 'キャンバスをクリックするとその場所に歌詞を入力できます。スペースキーでブロックが確定し次の位置に移動します。',
+    help2: '既存のブロックをダブルクリックすると編集できます。Tabキーでも次の位置に移動します。',
     help3: 'ブロックを上下にドラッグで音の高さ、左右ハンドルで長く伸ばす音を表現できます。',
     help4: 'スライドボタンをオンにすると、なめらかな音を曲線で表現できます。',
     help5: '小節 +/- ボタンで曲の長さを調整。左右スクロールで長い曲も作れます。',
     help6: 'JSON保存または共有リンクで他のデバイスでも作業を復元できます。',
     originalScore: '原曲', newLyrics: '新しい歌詞',
     fontSize: 'サイズ', color: '色', slide: 'スライド',
-    inputHint: 'Enterで確定・Escで取消・スペースで分割',
+    inputHint: 'スペースで確定・Enterで終了・Escで取消',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
     toastExample: 'サンプルを読み込みました！'
@@ -1105,7 +1147,7 @@ function applyI18n() {
   }
   // Text input font + hint
   const inp = document.getElementById('text-input-el');
-  if (inp) inp.style.fontFamily = `'${CANVAS_FONTS[lang]}', 'Pretendard GOV', sans-serif`;
+  if (inp) inp.style.fontFamily = `'Pretendard GOV', sans-serif`;
   const hint = document.getElementById('text-input-hint');
   if (hint) hint.textContent = t('inputHint');
 }
@@ -1125,7 +1167,7 @@ function applyI18n() {
  *             svgY = rowIndex * ROW_HEIGHT + block.y
  */
 const CANONICAL_MW   = 200;   // canonical units per measure (storage)
-const ROW_HEIGHT     = 300;   // px per row in the SVG
+let ROW_HEIGHT       = 300;   // px per row in the SVG (can toggle)
 const CANVAS_PAD_TOP = 28;
 const CANVAS_PAD_BOT = 20;
 const MPR_PC         = 8;     // measures per row on desktop
@@ -1297,13 +1339,14 @@ function renderAllGuideLines() {
 ══════════════════════════════════════════════════════ */
 function getCanvasFont() { return CANVAS_FONTS[lang] || 'Gaegu'; }
 
-function createSlidePath(x, y, width) {
+function createSlidePath(x, y, width, slideDy) {
+  const dy = (slideDy !== undefined) ? slideDy : 60;
   const cx1 = x + width * 0.3;
-  const cy1 = y + 30;
+  const cy1 = y + dy * 0.5;
   const cx2 = x + width * 0.7;
-  const cy2 = y + 50;
+  const cy2 = y + dy * 0.83;
   const ex = x + width;
-  const ey = y + 60;
+  const ey = y + dy;
   return `M${x},${y} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
 }
 
@@ -1314,13 +1357,14 @@ function makeSvgBlock(block) {
   g.setAttribute('class','block-group');
   g.style.cursor = 'grab';
 
-  const font  = getCanvasFont();
+  const font  = block.font || getCanvasFont();
   const fs    = block.fontSize || 28;
   const color = block.color || '#2A2D3F';
+  const dy    = block.slideDy !== undefined ? block.slideDy : 60;
 
   if (block.slide) {
     const pathId = `slide-path-${block.id}`;
-    const d      = createSlidePath(x, y, rw);
+    const d      = createSlidePath(x, y, rw, dy);
     const defs   = document.createElementNS('http://www.w3.org/2000/svg','defs');
     const path   = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('id', pathId); path.setAttribute('d', d); path.setAttribute('fill','none');
@@ -1342,8 +1386,9 @@ function makeSvgBlock(block) {
     textEl.appendChild(tp); g.appendChild(textEl);
 
     const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    bbox.setAttribute('x', x); bbox.setAttribute('y', y - fs * 0.2);
-    bbox.setAttribute('width', rw); bbox.setAttribute('height', fs + 60);
+    const bboxTop = dy >= 0 ? y - fs * 0.2 : y + dy - fs * 0.2;
+    bbox.setAttribute('x', x); bbox.setAttribute('y', bboxTop);
+    bbox.setAttribute('width', rw); bbox.setAttribute('height', fs + Math.abs(dy));
     bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
     g.appendChild(bbox);
   } else {
@@ -1373,8 +1418,9 @@ function makeSelectionOverlay(block, svgEl) {
   g.setAttribute('class','sel-overlay'); g.setAttribute('pointer-events','all');
 
   const fs = block.fontSize || 28;
-  const rx = svgX, ry = block.slide ? svgY - fs * 0.2 : svgY - fs;
-  const rh = block.slide ? fs + 60 : fs * 1.3;
+  const dy = block.slideDy !== undefined ? block.slideDy : 60;
+  const rx = svgX, ry = block.slide ? (dy >= 0 ? svgY - fs * 0.2 : svgY + dy - fs * 0.2) : svgY - fs;
+  const rh = block.slide ? fs + Math.abs(dy) : fs * 1.3;
 
   const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
   rect.setAttribute('x', rx - 2); rect.setAttribute('y', ry - 2);
@@ -1385,6 +1431,9 @@ function makeSelectionOverlay(block, svgEl) {
 
   g.appendChild(makeHandle(rx - 2,      ry + rh / 2, 'left'));
   g.appendChild(makeHandle(rx + rw + 2, ry + rh / 2, 'right'));
+  if (block.slide) {
+    g.appendChild(makeHandle(svgX + rw, svgY + dy, 'slide-end'));
+  }
   svgEl.appendChild(g);
   return g;
 }
@@ -1397,7 +1446,7 @@ function makeHandle(cx, cy, side) {
   c.setAttribute('fill','#5B8DEF');
   c.setAttribute('stroke','#fff');
   c.setAttribute('stroke-width','2.5');
-  c.setAttribute('cursor', side === 'left' ? 'ew-resize' : 'ew-resize');
+  c.setAttribute('cursor', side === 'slide-end' ? 'ns-resize' : 'ew-resize');
   c.setAttribute('data-handle', side);
   return c;
 }
@@ -1467,15 +1516,20 @@ function deselectAll() {
   selToolbar.classList.remove('active');
 }
 
+const selFont = document.getElementById('sel-font');
+
 function updateSelToolbar(block) {
   if (!block) { selToolbar.classList.remove('active'); return; }
   selFontSize.value = block.fontSize || 28;
   selFsVal.textContent = block.fontSize || 28;
   selColor.value = block.color || '#2A2D3F';
-  // Color swatches
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.classList.toggle('selected', sw.dataset.color === (block.color || '#2A2D3F'));
   });
+  if (selFont) {
+    const blockFont = block.font || (block.panel === 'new' ? 'Pretendard GOV' : getCanvasFont());
+    selFont.value = blockFont;
+  }
   selSlideToggle.classList.toggle('on', !!block.slide);
   selToolbar.classList.add('active');
 }
@@ -1509,24 +1563,32 @@ function getSvgPoint(svgEl, clientX, clientY) {
 
 function setupSvgInteraction(svgEl, panel) {
 
-  // ── Double-click: empty area → new block; existing block → edit
-  svgEl.addEventListener('dblclick', (e) => {
+  // ── Click: single click on empty canvas → new block; double-click on block → edit
+  svgEl.addEventListener('click', (e) => {
     if (panel === 'top') return;
-    const blockGroup = e.target.closest('.block-group');
-    if (blockGroup) {
-      const id = parseInt(blockGroup.dataset.id);
-      const block = state.blocks.find(b => b.id === id);
-      if (!block) return;
-      if (currentTab === 'write' && block.panel === 'original') return;
-      beginTextInput(svgEl, block, block.panel);
-      e.preventDefault(); e.stopPropagation();
-      return;
-    }
+    if (hasDragged) return;
+    if (textOverlay.classList.contains('active')) return;
     if (e.target.closest('.sel-overlay')) return;
-    const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
-    const { blockX, blockY } = svgToBlockCoords(pt.x, pt.y);
-    beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY);
-    e.preventDefault();
+
+    const blockGroup = e.target.closest('.block-group');
+    if (e.detail >= 2) {
+      // Double-click: edit existing block
+      if (blockGroup) {
+        const id = parseInt(blockGroup.dataset.id);
+        const block = state.blocks.find(b => b.id === id);
+        if (!block) return;
+        if (currentTab === 'write' && block.panel === 'original') return;
+        beginTextInput(svgEl, block, block.panel);
+        e.preventDefault(); e.stopPropagation();
+      }
+    } else {
+      // Single click on empty canvas: create new block
+      if (blockGroup) return;
+      const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+      const { blockX, blockY } = svgToBlockCoords(pt.x, pt.y);
+      beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY);
+      e.preventDefault();
+    }
   });
 
   // ── Pointer down: handle resize or block move or deselect
@@ -1539,11 +1601,13 @@ function setupSvgInteraction(svgEl, panel) {
       const block = state.blocks.find(b => b.id === selectedId);
       if (!block) return;
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+      const handleType = handle.dataset.handle;
       dragState = {
-        type: handle.dataset.handle === 'left' ? 'left-handle' : 'right-handle',
+        type: handleType === 'left' ? 'left-handle' : handleType === 'slide-end' ? 'slide-end' : 'right-handle',
         blockId: selectedId,
         startX: pt.x, startY: pt.y,
         origX: block.x, origY: block.y, origW: block.width,
+        origSlideDy: block.slideDy !== undefined ? block.slideDy : 60,
         svgEl
       };
       svgEl.setPointerCapture(e.pointerId);
@@ -1600,6 +1664,8 @@ function setupSvgInteraction(svgEl, panel) {
       const newW = Math.max(MIN_W, dragState.origW - dxPx / scale);
       block.x    = dragState.origX + (dragState.origW - newW);
       block.width = newW;
+    } else if (dragState.type === 'slide-end') {
+      block.slideDy = Math.max(-150, Math.min(150, dragState.origSlideDy + dyPx));
     }
     renderBlocks();
     positionSelToolbar();
@@ -1672,7 +1738,9 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
     textInputEl.style.width = '120px';
   }
 
-  textInputEl.style.fontFamily = `'${font}', 'Pretendard GOV', sans-serif`;
+  const inputFont = editingBlock ? (editingBlock.font || font) :
+                    (panel === 'new' ? 'Pretendard GOV' : font);
+  textInputEl.style.fontFamily = `'${inputFont}', 'Pretendard GOV', sans-serif`;
   textInputEl.style.fontSize   = fs + 'px';
   textInputEl.style.color      = editingBlock ? (editingBlock.color || '#2A2D3F') : '#2A2D3F';
   textInputEl.style.left = screenX + 'px';
@@ -1748,10 +1816,12 @@ function commitTextInput(andThenContinue = false) {
     const words = val.split(/\s+/).filter(w => w.length > 0);
     let curX = inputOriginX;
     let firstId = null;
+    const defaultFont = editingPanel === 'new' ? 'Pretendard GOV' : undefined;
     words.forEach(word => {
       const w = estimateWordWidth(word, fs);
       const nb = { id: nextId++, text: word, x: curX, y: inputOriginY,
-        width: w, fontSize: fs, slide: false, color: '#2A2D3F', panel: editingPanel };
+        width: w, fontSize: fs, slide: false, color: '#2A2D3F', panel: editingPanel,
+        font: defaultFont };
       state.blocks.push(nb);
       if (firstId === null) firstId = nb.id;
       lastBlock = nb;
@@ -1796,8 +1866,15 @@ textInputEl.addEventListener('keydown', (e) => {
     e.preventDefault();
     return;
   }
+  if (e.key === ' ' && !isComposing && !e.isComposing) {
+    // Space: commit current block and move to next position
+    e.preventDefault();
+    if (textInputEl.value.trim() !== '') {
+      commitTextInput(true /* andThenContinue */);
+    }
+    return;
+  }
   if (e.key === 'Tab' && !isComposing && !e.isComposing) {
-    // Commit current and immediately open next input after the block
     commitTextInput(true /* andThenContinue */);
     e.preventDefault();
     return;
@@ -1860,6 +1937,33 @@ selDelBtn.addEventListener('click', () => {
   state.blocks = state.blocks.filter(b => b.id !== selectedId);
   deselectAll();
   renderBlocks();
+});
+
+if (selFont) {
+  selFont.addEventListener('change', () => {
+    const block = state.blocks.find(b => b.id === selectedId);
+    if (block) { block.font = selFont.value; renderBlocks(); }
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   Row Height Toggle
+══════════════════════════════════════════════════════ */
+document.getElementById('height-narrow').addEventListener('click', () => {
+  ROW_HEIGHT = 200;
+  document.getElementById('height-narrow').classList.add('active');
+  document.getElementById('height-normal').classList.remove('active');
+  state.blocks.forEach(b => {
+    const maxY = ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || 28);
+    b.y = Math.min(b.y, maxY);
+  });
+  updateCanvasSize(); renderAllGuideLines(); renderBlocks();
+});
+document.getElementById('height-normal').addEventListener('click', () => {
+  ROW_HEIGHT = 300;
+  document.getElementById('height-normal').classList.add('active');
+  document.getElementById('height-narrow').classList.remove('active');
+  updateCanvasSize(); renderAllGuideLines(); renderBlocks();
 });
 
 /* ══════════════════════════════════════════════════════
