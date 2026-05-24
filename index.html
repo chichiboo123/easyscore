@@ -409,6 +409,23 @@ svg.score-canvas {
   user-select: none;
 }
 
+/* Block cursor states — visible grab/grabbing on hover/drag */
+.block-group { cursor: grab; }
+.block-group:hover .block-hitbox { cursor: grab; }
+.block-group.dragging,
+.block-group.dragging .block-hitbox { cursor: grabbing !important; }
+svg.score-canvas.dragging-active { cursor: grabbing; }
+.block-hitbox { cursor: grab; }
+
+/* Marquee selection rect */
+.marquee-rect {
+  fill: rgba(91,141,239,0.10);
+  stroke: #5B8DEF;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
 /* empty canvas hint overlay */
 .canvas-empty-hint {
   position: absolute;
@@ -467,14 +484,12 @@ svg.score-canvas {
   text-align: center;
 }
 
-/* ── Text Input Overlay (fixed bar at top of canvas, Canva-style) ── */
+/* ── Text Input Overlay (appears at click position) ── */
 #text-overlay {
   position: fixed;
   pointer-events: none;
   z-index: 200;
   display: none;
-  left: 50%;
-  transform: translateX(-50%);
 }
 #text-overlay.active {
   display: block;
@@ -945,8 +960,8 @@ footer a:hover { color: var(--primary); }
     <!-- Selection toolbar — Canva-style: fixed at top of canvas -->
     <div id="sel-toolbar">
       <span class="sel-ctrl-label" data-i18n="fontSize">크기</span>
-      <input type="range" id="sel-font-size" min="14" max="80" value="28" style="width:70px;">
-      <span class="fs-label" id="sel-fs-val">28</span>
+      <input type="range" id="sel-font-size" min="14" max="80" value="32" style="width:70px;">
+      <span class="fs-label" id="sel-fs-val">32</span>
 
       <span class="sel-ctrl-label" data-i18n="color">색</span>
       <div class="color-swatches" id="color-swatches">
@@ -972,6 +987,11 @@ footer a:hover { color: var(--primary); }
       <button class="slide-toggle-btn" id="sel-slide-toggle">
         <span class="material-symbols-rounded">trending_down</span>
         <span data-i18n="slide">슬라이드</span>
+      </button>
+
+      <button class="slide-toggle-btn" id="sel-edit-btn" title="텍스트 편집">
+        <span class="material-symbols-rounded">edit</span>
+        <span data-i18n="editText">편집</span>
       </button>
 
       <button class="del-btn" id="sel-del-btn" title="삭제">
@@ -1055,8 +1075,8 @@ footer a:hover { color: var(--primary); }
       </button>
     </div>
     <ul class="help-list" id="help-list">
-      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 더블클릭하면 그 자리에 가사를 쓸 수 있어요.</div></li>
-      <li><div class="help-num">2</div><div data-i18n="help2">띄어쓰기로 글자를 나누면 글자 묶음(블록)이 자동으로 만들어져요. 예) "반짝 반짝 작은 별" → 4개 블록</div></li>
+      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요.</div></li>
+      <li><div class="help-num">2</div><div data-i18n="help2">글자 블록을 더블클릭하거나 ✎ 편집 버튼으로 수정할 수 있고, 빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택할 수 있어요.</div></li>
       <li><div class="help-num">3</div><div data-i18n="help3">글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.</div></li>
       <li><div class="help-num">4</div><div data-i18n="help4">상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.</div></li>
       <li><div class="help-num">5</div><div data-i18n="help5">마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.</div></li>
@@ -1088,13 +1108,13 @@ const TRANSLATIONS = {
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
     helpTitle: '사용 방법', exampleBtn: '예시 보기',
     help1: '빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바를 누르면 블록이 완성되고 다음 칸으로 이동해요.',
-    help2: '글자 블록을 더블클릭하면 편집할 수 있어요. Tab 키로도 다음 칸으로 이동해요.',
+    help2: '글자 블록을 더블클릭하거나 상단 도구막대의 ✎ 편집 버튼을 누르면 텍스트를 수정할 수 있어요. 빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택해 같이 옮기거나 일괄 수정할 수 있어요.',
     help3: '글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.',
     help4: '상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.',
     help5: '마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.',
     help6: '저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.',
     originalScore: '원곡 악보', newLyrics: '새 가사',
-    fontSize: '크기', color: '색', slide: '슬라이드',
+    fontSize: '크기', color: '색', slide: '슬라이드', editText: '편집',
     inputHint: '스페이스로 완성 · Enter로 마침 · Esc로 취소',
     toastCopied: '클립보드에 복사됐어요!', toastSaved: '저장됐어요!', toastLoaded: '불러왔어요!',
     toastLinkCopied: '링크가 복사됐어요!', toastImgCopied: '이미지가 복사됐어요!',
@@ -1109,13 +1129,13 @@ const TRANSLATIONS = {
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
     helpTitle: 'How to use', exampleBtn: 'Show example',
     help1: 'Click the canvas to type lyrics at that spot. Space confirms the block and moves to the next position.',
-    help2: 'Double-click an existing block to edit it. Tab also moves to the next position.',
+    help2: 'Double-click a block, or use the ✎ Edit button in the top toolbar, to change its text. Drag on the empty canvas to select multiple blocks at once for bulk move or styling.',
     help3: 'Drag a block up/down for pitch; drag side handles to stretch for held notes.',
     help4: 'Toggle the slide button to show a gliding note on a curve.',
     help5: 'Use the measure +/- buttons to add/remove measures. Scroll left/right for longer songs.',
     help6: 'Save as JSON or copy the share link to restore your work anywhere.',
     originalScore: 'Original', newLyrics: 'New lyrics',
-    fontSize: 'Size', color: 'Color', slide: 'Slide',
+    fontSize: 'Size', color: 'Color', slide: 'Slide', editText: 'Edit',
     inputHint: 'Space to confirm · Enter to finish · Esc to cancel',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
@@ -1130,13 +1150,13 @@ const TRANSLATIONS = {
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
     helpTitle: '使い方', exampleBtn: '例を見る',
     help1: 'キャンバスをクリックするとその場所に歌詞を入力できます。スペースキーでブロックが確定し次の位置に移動します。',
-    help2: '既存のブロックをダブルクリックすると編集できます。Tabキーでも次の位置に移動します。',
+    help2: 'ブロックをダブルクリック、または上部ツールバーの ✎ 編集ボタンでテキストを修正できます。空白部分をドラッグすると複数のブロックをまとめて選択し移動・一括編集できます。',
     help3: 'ブロックを上下にドラッグで音の高さ、左右ハンドルで長く伸ばす音を表現できます。',
     help4: 'スライドボタンをオンにすると、なめらかな音を曲線で表現できます。',
     help5: '小節 +/- ボタンで曲の長さを調整。左右スクロールで長い曲も作れます。',
     help6: 'JSON保存または共有リンクで他のデバイスでも作業を復元できます。',
     originalScore: '原曲', newLyrics: '新しい歌詞',
-    fontSize: 'サイズ', color: '色', slide: 'スライド',
+    fontSize: 'サイズ', color: '色', slide: 'スライド', editText: '編集',
     inputHint: 'スペースで確定・Enterで終了・Escで取消',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
@@ -1189,6 +1209,7 @@ const CANVAS_PAD_BOT = 20;
 const MPR_PC         = 8;     // measures per row on desktop
 const MPR_TABLET     = 4;     // measures per row on tablet
 const BREAK_PX       = 900;   // viewport width breakpoint
+const DEFAULT_FONT_SIZE = 32; // default size for newly created text blocks
 
 function getMeasuresPerRow() {
   return window.innerWidth >= BREAK_PX ? MPR_PC : MPR_TABLET;
@@ -1241,7 +1262,8 @@ let state = {
 };
 let nextId = 1;
 let currentTab = 'learn';
-let selectedId = null;
+let selectedId = null;          // primary selection (drives toolbar values)
+let selectedIds = new Set();    // all selected block ids (for bulk move/edit)
 
 /* ══════════════════════════════════════════════════════
    SVG Element Refs
@@ -1375,7 +1397,7 @@ function makeSvgBlock(block) {
   g.style.cursor = 'grab';
 
   const font  = block.font || getCanvasFont();
-  const fs    = block.fontSize || 28;
+  const fs    = block.fontSize || DEFAULT_FONT_SIZE;
   const color = block.color || '#2A2D3F';
   const dy    = block.slideDy !== undefined ? block.slideDy : 60;
 
@@ -1426,15 +1448,17 @@ function makeSvgBlock(block) {
   return g;
 }
 
-function makeSelectionOverlay(block, svgEl) {
-  const old = svgEl.querySelector('.sel-overlay');
-  if (old) old.remove();
+function makeSelectionOverlay(block, svgEl, isMulti) {
+  if (!isMulti) {
+    svgEl.querySelectorAll('.sel-overlay').forEach(el => el.remove());
+  }
 
   const { svgX, svgY, renderWidth: rw } = getBlockRenderPos(block);
   const g  = document.createElementNS('http://www.w3.org/2000/svg','g');
   g.setAttribute('class','sel-overlay'); g.setAttribute('pointer-events','all');
+  g.setAttribute('data-sel-id', block.id);
 
-  const fs = block.fontSize || 28;
+  const fs = block.fontSize || DEFAULT_FONT_SIZE;
   const dy = block.slideDy !== undefined ? block.slideDy : 60;
   const rx = svgX, ry = block.slide ? (dy >= 0 ? svgY - fs * 0.2 : svgY + dy - fs * 0.2) : svgY - fs;
   const rh = block.slide ? fs + Math.abs(dy) : fs * 1.3;
@@ -1446,10 +1470,13 @@ function makeSelectionOverlay(block, svgEl) {
   rect.setAttribute('stroke-width','2'); rect.setAttribute('stroke-dasharray','5 3');
   rect.setAttribute('rx','6'); g.appendChild(rect);
 
-  g.appendChild(makeHandle(rx - 2,      ry + rh / 2, 'left'));
-  g.appendChild(makeHandle(rx + rw + 2, ry + rh / 2, 'right'));
-  if (block.slide) {
-    g.appendChild(makeHandle(svgX + rw, svgY + dy, 'slide-end'));
+  // Resize handles only on single-selection (per-block adjustments)
+  if (!isMulti) {
+    g.appendChild(makeHandle(rx - 2,      ry + rh / 2, 'left'));
+    g.appendChild(makeHandle(rx + rw + 2, ry + rh / 2, 'right'));
+    if (block.slide) {
+      g.appendChild(makeHandle(svgX + rw, svgY + dy, 'slide-end'));
+    }
   }
   svgEl.appendChild(g);
   return g;
@@ -1490,14 +1517,19 @@ function renderBlocks() {
     }
   });
 
-  // Re-draw selection if needed
-  if (selectedId !== null) {
-    const block = state.blocks.find(b => b.id === selectedId);
-    if (block) {
-      const svgEl = getActiveSvg();
-      if (svgEl) makeSelectionOverlay(block, svgEl);
-      updateSelToolbar(block);
+  // Re-draw selection overlays for all selected blocks
+  if (selectedIds.size > 0) {
+    const svgEl = getActiveSvg();
+    if (svgEl) {
+      svgEl.querySelectorAll('.sel-overlay').forEach(el => el.remove());
+      const isMulti = selectedIds.size > 1;
+      selectedIds.forEach(sid => {
+        const b = state.blocks.find(bb => bb.id === sid);
+        if (b) makeSelectionOverlay(b, svgEl, isMulti);
+      });
     }
+    const primary = state.blocks.find(b => b.id === selectedId);
+    if (primary) updateSelToolbar(primary);
   }
 }
 
@@ -1520,15 +1552,33 @@ const selColor = document.getElementById('sel-color');
 const selSlideToggle = document.getElementById('sel-slide-toggle');
 const selDelBtn = document.getElementById('sel-del-btn');
 
-function selectBlock(id) {
-  selectedId = id;
+function selectBlock(id, opts) {
+  opts = opts || {};
+  if (opts.toggle) {
+    if (selectedIds.has(id)) {
+      selectedIds.delete(id);
+      if (selectedId === id) {
+        selectedId = selectedIds.size > 0 ? selectedIds.values().next().value : null;
+      }
+    } else {
+      selectedIds.add(id);
+      selectedId = id;
+    }
+  } else if (opts.add) {
+    selectedIds.add(id);
+    selectedId = id;
+  } else {
+    selectedIds.clear();
+    selectedIds.add(id);
+    selectedId = id;
+  }
   renderBlocks();
   positionSelToolbar();
 }
 
 function deselectAll() {
   selectedId = null;
-  // Remove selection overlays
+  selectedIds.clear();
   document.querySelectorAll('.sel-overlay').forEach(el => el.remove());
   selToolbar.classList.remove('active');
 }
@@ -1537,8 +1587,8 @@ const selFont = document.getElementById('sel-font');
 
 function updateSelToolbar(block) {
   if (!block) { selToolbar.classList.remove('active'); return; }
-  selFontSize.value = block.fontSize || 28;
-  selFsVal.textContent = block.fontSize || 28;
+  selFontSize.value = block.fontSize || DEFAULT_FONT_SIZE;
+  selFsVal.textContent = block.fontSize || DEFAULT_FONT_SIZE;
   selColor.value = block.color || '#2A2D3F';
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.classList.toggle('selected', sw.dataset.color === (block.color || '#2A2D3F'));
@@ -1586,22 +1636,23 @@ function setupSvgInteraction(svgEl, panel) {
         const block = state.blocks.find(b => b.id === id);
         if (!block) return;
         if (currentTab === 'write' && block.panel === 'original') return;
-        beginTextInput(svgEl, block, block.panel);
+        beginTextInput(svgEl, block, block.panel, undefined, undefined, e.clientX, e.clientY);
         e.preventDefault(); e.stopPropagation();
       }
     } else {
-      // Single click on empty canvas: create new block
+      // Single click on empty canvas: create new block at click position
       if (blockGroup) return;
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
       const { blockX, blockY } = svgToBlockCoords(pt.x, pt.y);
-      beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY);
+      beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY, e.clientX, e.clientY);
       e.preventDefault();
     }
   });
 
-  // ── Pointer down: handle resize or block move or deselect
+  // ── Pointer down: handle resize / block move / marquee select
   svgEl.addEventListener('pointerdown', (e) => {
     if (panel === 'top') return;
+    if (e.button !== 0) return; // left button only
     hasDragged = false;
 
     const handle = e.target.closest('[data-handle]');
@@ -1628,19 +1679,54 @@ function setupSvgInteraction(svgEl, panel) {
       const block = state.blocks.find(b => b.id === id);
       if (!block) return;
       if (currentTab === 'write' && block.panel === 'original') return;
-      selectBlock(id);
+
+      if (e.shiftKey) {
+        selectBlock(id, { toggle: true });
+        e.stopPropagation();
+        return;
+      }
+
+      if (!selectedIds.has(id)) {
+        // Click an unselected block → make it the sole selection
+        selectBlock(id);
+      } else {
+        selectedId = id; // promote to primary; keep group
+        const primary = state.blocks.find(b => b.id === selectedId);
+        if (primary) updateSelToolbar(primary);
+      }
+
+      // Begin multi-block move drag
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+      const origPositions = [];
+      selectedIds.forEach(sid => {
+        const bb = state.blocks.find(b => b.id === sid);
+        if (bb) origPositions.push({
+          id: sid, origX: bb.x, origY: bb.y, origW: bb.width
+        });
+      });
       dragState = {
-        type: 'move', blockId: id,
+        type: 'move-multi', blockId: id,
         startX: pt.x, startY: pt.y,
-        origX: block.x, origY: block.y, origW: block.width,
-        svgEl
+        origPositions, svgEl
       };
+      blockGroup.classList.add('dragging');
+      svgEl.classList.add('dragging-active');
       svgEl.setPointerCapture(e.pointerId);
       e.stopPropagation(); return;
     }
 
-    if (!e.target.closest('.sel-overlay')) deselectAll();
+    if (e.target.closest('.sel-overlay')) return;
+
+    // Empty canvas → start potential marquee selection
+    const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+    dragState = {
+      type: 'marquee',
+      startX: pt.x, startY: pt.y,
+      svgEl, panel,
+      shift: e.shiftKey,
+      preserved: e.shiftKey ? new Set(selectedIds) : new Set()
+    };
+    svgEl.setPointerCapture(e.pointerId);
   });
 
   svgEl.addEventListener('pointermove', (e) => {
@@ -1650,25 +1736,42 @@ function setupSvgInteraction(svgEl, panel) {
     const dyPx = pt.y - dragState.startY;
     if (Math.abs(dxPx) > 2 || Math.abs(dyPx) > 2) hasDragged = true;
 
-    const block = state.blocks.find(b => b.id === dragState.blockId);
-    if (!block) return;
     const scale  = getMeasureScale();
     const mpr    = getMeasuresPerRow();
     const rowW   = mpr * CANONICAL_MW;
+    const MIN_W  = 20 / scale;
+
+    if (dragState.type === 'marquee') {
+      if (!hasDragged) return;
+      drawMarquee(svgEl, dragState.startX, dragState.startY, pt.x, pt.y);
+      updateMarqueeSelection(dragState.startX, dragState.startY, pt.x, pt.y,
+                             dragState.panel, dragState.preserved);
+      return;
+    }
+
+    if (dragState.type === 'move-multi') {
+      dragState.origPositions.forEach(op => {
+        const b = state.blocks.find(bb => bb.id === op.id);
+        if (!b) return;
+        const curRow = Math.floor(op.origX / rowW);
+        const minX = curRow * rowW;
+        const maxX = (curRow + 1) * rowW - (b.width || MIN_W);
+        b.x = Math.max(minX, Math.min(maxX, op.origX + dxPx / scale));
+        const minYFrac = CANVAS_PAD_TOP / ROW_HEIGHT;
+        const maxYFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || DEFAULT_FONT_SIZE)) / ROW_HEIGHT;
+        b.y = Math.max(minYFrac, Math.min(maxYFrac, (op.origY * ROW_HEIGHT + dyPx) / ROW_HEIGHT));
+      });
+      renderBlocks();
+      positionSelToolbar();
+      return;
+    }
+
+    // single-block handle resize
+    const block = state.blocks.find(b => b.id === dragState.blockId);
+    if (!block) return;
     const curRow = Math.floor(dragState.origX / rowW);
 
-    const MIN_W = 20 / scale; // min block width in canonical units
-
-    if (dragState.type === 'move') {
-      // Clamp x within current row, y within current row height (y stored as fraction 0–1)
-      const minX = curRow * rowW;
-      const maxX = (curRow + 1) * rowW - (block.width || MIN_W);
-      block.x = Math.max(minX, Math.min(maxX, dragState.origX + dxPx / scale));
-      const minYFrac = CANVAS_PAD_TOP / ROW_HEIGHT;
-      const maxYFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (block.fontSize || 32)) / ROW_HEIGHT;
-      block.y = Math.max(minYFrac, Math.min(maxYFrac,
-                  (dragState.origY * ROW_HEIGHT + dyPx) / ROW_HEIGHT));
-    } else if (dragState.type === 'right-handle') {
+    if (dragState.type === 'right-handle') {
       block.width = Math.max(MIN_W, dragState.origW + dxPx / scale);
     } else if (dragState.type === 'left-handle') {
       const newW = Math.max(MIN_W, dragState.origW - dxPx / scale);
@@ -1681,9 +1784,67 @@ function setupSvgInteraction(svgEl, panel) {
     positionSelToolbar();
   });
 
-  svgEl.addEventListener('pointerup', () => {
-    if (dragState) dragState = null;
+  svgEl.addEventListener('pointerup', (e) => {
+    if (!dragState) return;
+    svgEl.classList.remove('dragging-active');
+    svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
+
+    if (dragState.type === 'marquee') {
+      removeMarquee(svgEl);
+      if (!hasDragged) {
+        // Treat as plain click on empty area → deselect
+        if (!dragState.shift) deselectAll();
+      }
+    }
+    dragState = null;
   });
+}
+
+/* ── Marquee rect (drag-select multiple blocks) ── */
+function drawMarquee(svgEl, x1, y1, x2, y2) {
+  let rect = svgEl.querySelector('.marquee-rect');
+  if (!rect) {
+    rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', 'marquee-rect');
+    svgEl.appendChild(rect);
+  }
+  const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
+  rect.setAttribute('x', minX); rect.setAttribute('y', minY);
+  rect.setAttribute('width', Math.abs(x2 - x1));
+  rect.setAttribute('height', Math.abs(y2 - y1));
+}
+
+function removeMarquee(svgEl) {
+  const rect = svgEl.querySelector('.marquee-rect');
+  if (rect) rect.remove();
+}
+
+function updateMarqueeSelection(x1, y1, x2, y2, panel, preserved) {
+  const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+  const targetPanel = (currentTab === 'learn') ? 'original' : 'new';
+
+  selectedIds = new Set(preserved || []);
+
+  state.blocks.forEach(b => {
+    if (b.panel !== targetPanel) return;
+    const { svgX, svgY, renderWidth: rw } = getBlockRenderPos(b);
+    const fs = b.fontSize || DEFAULT_FONT_SIZE;
+    const bx1 = svgX, by1 = svgY - fs;
+    const bx2 = svgX + rw, by2 = svgY + fs * 0.3;
+    if (bx2 >= minX && bx1 <= maxX && by2 >= minY && by1 <= maxY) {
+      selectedIds.add(b.id);
+    }
+  });
+
+  selectedId = selectedIds.size > 0 ? selectedIds.values().next().value : null;
+  renderBlocks();
+  if (selectedIds.size > 0) {
+    const primary = state.blocks.find(b => b.id === selectedId);
+    if (primary) updateSelToolbar(primary);
+  } else {
+    selToolbar.classList.remove('active');
+  }
 }
 
 setupSvgInteraction(learnSvg, 'learn');
@@ -1741,11 +1902,13 @@ function clearTextPreview() {
 }
 
 /*
- * beginTextInput has two call signatures:
- *   1. Editing an existing block:   beginTextInput(svgEl, block, panel)
- *   2. Creating at canvas coords:   beginTextInput(svgEl, null, panel, blockX, blockY)
+ * beginTextInput call signatures:
+ *   1. Editing an existing block:   beginTextInput(svgEl, block, panel, undefined, undefined, clientX, clientY)
+ *   2. Creating at canvas coords:   beginTextInput(svgEl, null, panel, blockX, blockY, clientX, clientY)
  */
-function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
+let _inputAnchor = null; // { clientX, clientY } where input bar should appear
+
+function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY, clientX, clientY) {
   editingBlock  = blockOrNull || null;
   editingPanel  = panel;
   editingSvg    = svgEl;
@@ -1755,17 +1918,36 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
   let fs;
 
   if (editingBlock) {
-    fs = editingBlock.fontSize || 32;
+    // Always edit at the block's own size
+    fs = editingBlock.fontSize || DEFAULT_FONT_SIZE;
     inputOriginX = editingBlock.x;
     inputOriginY = editingBlock.y;
     textInputEl.value = editingBlock.text || '';
     textInputEl.style.width = Math.max(180, getBlockRenderPos(editingBlock).renderWidth) + 'px';
+
+    // If no client coords provided (e.g. keyboard shortcut), anchor at the block's own
+    // SVG position so the input appears near the block, not at the canvas centre.
+    if (clientX == null || clientY == null) {
+      const r = svgEl.getBoundingClientRect();
+      const { svgX, svgY } = getBlockRenderPos(editingBlock);
+      clientX = r.left + svgX;
+      clientY = r.top + svgY;
+    }
   } else {
-    fs = 32;
+    // New blocks always use the default font size
+    fs = DEFAULT_FONT_SIZE;
     inputOriginX = newBlockX;
     inputOriginY = newBlockY;
     textInputEl.value = '';
     textInputEl.style.width = '260px';
+
+    // If no client coords (e.g. Tab continuation), anchor at the new position in SVG coords
+    if (clientX == null || clientY == null) {
+      const r = svgEl.getBoundingClientRect();
+      const { svgX, svgY } = getBlockRenderPos({ x: newBlockX, y: newBlockY, width: CANONICAL_MW });
+      clientX = r.left + svgX;
+      clientY = r.top + svgY;
+    }
   }
 
   const inputFont = editingBlock ? (editingBlock.font || font) :
@@ -1775,27 +1957,53 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
   textInputEl.style.fontSize   = fs + 'px';
   textInputEl.style.color      = inputColor;
 
-  // Canva-style: position input bar at top of canvas area (not at click position)
-  repositionTextInput();
+  // Position the input bar near the click point
+  _inputAnchor = { clientX, clientY };
+  textOverlay.classList.add('active');
+  positionTextInputAtAnchor();
 
   // Live preview: show text at actual canvas position while typing
   createTextPreview(svgEl, inputOriginX, inputOriginY, fs, inputFont, inputColor);
 
-  textOverlay.classList.add('active');
   requestAnimationFrame(() => {
     textInputEl.focus();
     if (editingBlock) textInputEl.select();
     autoResizeInput();
+    positionTextInputAtAnchor();
   });
 }
 
-function repositionTextInput() {
-  const canvasArea = document.getElementById('canvas-area');
-  if (!canvasArea) return;
+function positionTextInputAtAnchor() {
+  if (!_inputAnchor) return;
+  const bar = document.getElementById('text-input-bar');
+  if (!bar) return;
+  const r  = bar.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w  = r.width  || 280;
+  const h  = r.height || 70;
+
+  // Default: centre horizontally on click, place bar above click point
+  let left = _inputAnchor.clientX - w / 2;
+  let top  = _inputAnchor.clientY - h - 14;
+
+  // If above isn't enough room, place below
+  if (top < 8) top = _inputAnchor.clientY + 14;
+
+  // Clamp horizontally
+  left = Math.max(8, Math.min(vw - w - 8, left));
+  // Clamp vertically (mobile keyboard handling below)
   const vv = window.visualViewport;
-  const canvasRect = canvasArea.getBoundingClientRect();
-  const topY = vv ? Math.max(canvasRect.top + 8, vv.offsetTop + 8) : canvasRect.top + 8;
-  textOverlay.style.top = topY + 'px';
+  const vvBottom = vv ? (vv.offsetTop + vv.height) : vh;
+  top  = Math.max(8, Math.min(vvBottom - h - 8, top));
+
+  textOverlay.style.left = left + 'px';
+  textOverlay.style.top  = top  + 'px';
+}
+
+function repositionTextInput() {
+  // Keep the bar near the click anchor; on mobile keyboard appearance, ensure it remains visible.
+  positionTextInputAtAnchor();
 }
 
 // Returns canonical units
@@ -1834,13 +2042,19 @@ function commitTextInput(andThenContinue = false) {
   if (isComposing) return null;
 
   const val = textInputEl.value.trim();
-  const fs  = parseInt(textInputEl.style.fontSize) || 32;
+  // New blocks always use DEFAULT_FONT_SIZE; existing edits keep their own fontSize.
+  const fs  = editingBlock ? (editingBlock.fontSize || DEFAULT_FONT_SIZE)
+                           : DEFAULT_FONT_SIZE;
   let lastBlock = null;
 
   if (editingBlock) {
     if (val === '') {
       state.blocks = state.blocks.filter(b => b.id !== editingBlock.id);
-      if (selectedId === editingBlock.id) deselectAll();
+      selectedIds.delete(editingBlock.id);
+      if (selectedId === editingBlock.id) {
+        selectedId = selectedIds.size > 0 ? selectedIds.values().next().value : null;
+        if (selectedId === null) deselectAll();
+      }
     } else {
       const words = val.split(/\s+/).filter(w => w.length > 0);
       editingBlock.text  = words[0];
@@ -1953,51 +2167,77 @@ window.visualViewport?.addEventListener('scroll', () => {
 /* ══════════════════════════════════════════════════════
    Selection Toolbar Actions
 ══════════════════════════════════════════════════════ */
+function forEachSelected(fn) {
+  if (selectedIds.size === 0) return;
+  selectedIds.forEach(id => {
+    const b = state.blocks.find(bb => bb.id === id);
+    if (b) fn(b);
+  });
+}
+
 selFontSize.addEventListener('input', () => {
   selFsVal.textContent = selFontSize.value;
-  const block = state.blocks.find(b => b.id === selectedId);
-  if (block) { block.fontSize = parseInt(selFontSize.value); renderBlocks(); positionSelToolbar(); }
+  const v = parseInt(selFontSize.value);
+  forEachSelected(b => { b.fontSize = v; });
+  renderBlocks(); positionSelToolbar();
 });
 
 selColor.addEventListener('input', () => {
-  const block = state.blocks.find(b => b.id === selectedId);
-  if (block) { block.color = selColor.value; renderBlocks(); }
+  forEachSelected(b => { b.color = selColor.value; });
+  renderBlocks();
 });
 
 document.querySelectorAll('.color-swatch').forEach(sw => {
   sw.addEventListener('click', () => {
-    const block = state.blocks.find(b => b.id === selectedId);
-    if (block) {
-      block.color = sw.dataset.color;
-      selColor.value = sw.dataset.color;
-      renderBlocks();
-      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-      sw.classList.add('selected');
-    }
+    if (selectedIds.size === 0) return;
+    const c = sw.dataset.color;
+    forEachSelected(b => { b.color = c; });
+    selColor.value = c;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    renderBlocks();
   });
 });
 
 selSlideToggle.addEventListener('click', () => {
-  const block = state.blocks.find(b => b.id === selectedId);
-  if (block) {
-    block.slide = !block.slide;
-    selSlideToggle.classList.toggle('on', block.slide);
-    renderBlocks();
-    positionSelToolbar();
-  }
+  if (selectedIds.size === 0) return;
+  // Decide target state from primary block, then apply to all
+  const primary = state.blocks.find(b => b.id === selectedId);
+  const target = primary ? !primary.slide : true;
+  forEachSelected(b => { b.slide = target; });
+  selSlideToggle.classList.toggle('on', target);
+  renderBlocks();
+  positionSelToolbar();
 });
 
 selDelBtn.addEventListener('click', () => {
-  if (selectedId === null) return;
-  state.blocks = state.blocks.filter(b => b.id !== selectedId);
+  if (selectedIds.size === 0) return;
+  const ids = new Set(selectedIds);
+  state.blocks = state.blocks.filter(b => !ids.has(b.id));
   deselectAll();
   renderBlocks();
+  updateEmptyHint();
 });
 
 if (selFont) {
   selFont.addEventListener('change', () => {
+    const v = selFont.value;
+    forEachSelected(b => { b.font = v; });
+    renderBlocks();
+  });
+}
+
+const selEditBtn = document.getElementById('sel-edit-btn');
+if (selEditBtn) {
+  selEditBtn.addEventListener('click', () => {
+    if (selectedId === null) return;
     const block = state.blocks.find(b => b.id === selectedId);
-    if (block) { block.font = selFont.value; renderBlocks(); }
+    if (!block) return;
+    // Anchor input bar near the block itself
+    const svgEl = getActiveSvg();
+    const r = svgEl.getBoundingClientRect();
+    const { svgX, svgY } = getBlockRenderPos(block);
+    beginTextInput(svgEl, block, block.panel, undefined, undefined, r.left + svgX, r.top + svgY);
   });
 }
 
@@ -2010,7 +2250,7 @@ document.getElementById('height-narrow').addEventListener('click', () => {
   document.getElementById('height-normal').classList.remove('active');
   // Clamp y fractions so blocks stay within the narrower row
   state.blocks.forEach(b => {
-    const maxFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || 28)) / ROW_HEIGHT;
+    const maxFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || DEFAULT_FONT_SIZE)) / ROW_HEIGHT;
     b.y = Math.min(b.y, maxFrac);
   });
   updateCanvasSize(); renderAllGuideLines(); renderBlocks();
@@ -2391,24 +2631,24 @@ document.addEventListener('keydown', (e) => {
   if (e.target === textInputEl) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
-  if (selectedId !== null) {
+  if (selectedIds.size > 0) {
+    // Delete/Backspace → remove all selected blocks
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      const ids = new Set(selectedIds);
+      state.blocks = state.blocks.filter(b => !ids.has(b.id));
+      deselectAll(); renderBlocks(); updateEmptyHint();
+      e.preventDefault(); return;
+    }
     const block = state.blocks.find(b => b.id === selectedId);
     if (block) {
-      // Delete/Backspace → remove block
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        state.blocks = state.blocks.filter(b => b.id !== selectedId);
-        deselectAll(); renderBlocks(); updateEmptyHint();
-        e.preventDefault(); return;
-      }
-      // F2 or Enter → open edit mode
+      // F2 or Enter → open edit mode for the primary selection
       if (e.key === 'F2' || (e.key === 'Enter' && !textOverlay.classList.contains('active'))) {
         beginTextInput(getActiveSvg(), block, block.panel);
         e.preventDefault(); return;
       }
-      // Any printable char → start editing and prepend char
+      // Any printable char → start editing primary and prepend char
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         beginTextInput(getActiveSvg(), block, block.panel);
-        // Replace existing text with the typed char
         requestAnimationFrame(() => {
           textInputEl.value = e.key;
           textInputEl.setSelectionRange(1, 1);
