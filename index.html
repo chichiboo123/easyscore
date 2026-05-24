@@ -4,12 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>너를 위한 악보 · Easy Score</title>
+
+<!-- Favicon: inline SVG music note -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%235B8DEF'/><stop offset='1' stop-color='%237DD3B8'/></linearGradient></defs><rect x='2' y='2' width='60' height='60' rx='14' fill='url(%23g)'/><path d='M40 16v22.5a8 8 0 1 1-4-6.93V22l-14 4v17a8 8 0 1 1-4-6.93V20l22-6z' fill='%23fff'/></svg>">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Zen+Maru+Gothic:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gaegu:wght@300;400;700&family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Zen+Maru+Gothic:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded" rel="stylesheet">
+
+<!-- Pretendard GOV (Korean public-sector variant of Pretendard) -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
 <style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@font-face {
+  font-family: 'Pretendard GOV';
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard-gov/dist/web/variable/woff2/PretendardGOVVariable.woff2') format('woff2-variations');
+}
 
 :root {
   --bg: #F4F6FB;          /* soft cool white background */
@@ -37,7 +50,7 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--ink);
-  font-family: 'Pretendard', -apple-system, sans-serif;
+  font-family: 'Pretendard GOV', 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
 }
@@ -116,13 +129,23 @@ header {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 700;
-  font-size: 17px;
   color: var(--ink);
+}
+.logo-icon { font-size: 28px; color: var(--primary); }
+.logo-title {
+  font-family: 'Black Han Sans', 'Pretendard GOV', sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  color: var(--ink);
+}
+.logo-title.en {
+  font-family: 'Pretendard GOV', 'Pretendard Variable', sans-serif;
+  font-weight: 800;
+  font-size: 20px;
   letter-spacing: -0.3px;
 }
-.logo-icon { font-size: 26px; color: var(--primary); }
-.logo-sub { font-size: 12px; font-weight: 500; color: var(--ink-soft); margin-top: 2px; }
 
 .header-spacer { flex: 1; }
 
@@ -343,11 +366,21 @@ input[type="range"]::-moz-range-thumb {
 .canvas-wrapper {
   position: relative;
   flex: 1;
-  overflow: hidden;
+  overflow: auto;          /* enable scroll for long songs */
+  background: var(--bg);
+  scroll-behavior: smooth;
 }
+.canvas-wrapper::-webkit-scrollbar { width: 12px; height: 12px; }
+.canvas-wrapper::-webkit-scrollbar-track { background: var(--bg); }
+.canvas-wrapper::-webkit-scrollbar-thumb {
+  background: var(--primary-soft);
+  border-radius: 8px;
+  border: 3px solid var(--bg);
+}
+.canvas-wrapper::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 .canvas-wrapper.write-top {
-  flex: 0 0 48%;
+  flex: 0 0 46%;
   border-bottom: 2px dashed var(--primary-soft);
 }
 .canvas-wrapper.write-bottom {
@@ -370,12 +403,52 @@ input[type="range"]::-moz-range-thumb {
 }
 
 svg.score-canvas {
-  width: 100%;
-  height: 100%;
   display: block;
   cursor: crosshair;
   background: var(--surface);
   user-select: none;
+  /* width/height set dynamically based on measures */
+}
+
+/* "panning" cursor when dragging empty space */
+.canvas-wrapper.panning { cursor: grabbing; }
+.canvas-wrapper.panning svg.score-canvas { cursor: grabbing; }
+
+/* ── Measure controls ── */
+.measure-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 2px;
+}
+.measure-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  transition: background 0.12s;
+}
+.measure-btn:hover { background: var(--primary-soft); }
+.measure-btn:disabled { color: var(--ink-soft); opacity: 0.4; cursor: not-allowed; }
+.measure-btn:disabled:hover { background: transparent; }
+.measure-btn .material-symbols-rounded { font-size: 20px; }
+.measure-count {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 28px;
+  text-align: center;
 }
 
 /* ── Text Input Overlay ── */
@@ -533,16 +606,42 @@ footer a:hover { color: var(--primary); }
   width: 90%;
   position: relative;
 }
+.modal-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
 .modal-title {
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
-  margin-bottom: 22px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .modal-title .material-symbols-rounded { color: var(--primary); font-size: 28px; }
+.example-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--mint));
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  box-shadow: 0 3px 10px rgba(91,141,239,0.30);
+}
+.example-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(91,141,239,0.40); }
+.example-btn:active { transform: translateY(0); }
+.example-btn .material-symbols-rounded { font-size: 18px; }
 .modal-close {
   position: absolute;
   top: 16px;
@@ -672,10 +771,7 @@ footer a:hover { color: var(--primary); }
   <header>
     <div class="logo">
       <span class="logo-icon material-symbols-rounded">music_note</span>
-      <div>
-        <div>너를 위한 악보</div>
-        <div class="logo-sub">Easy Score</div>
-      </div>
+      <div class="logo-title" id="logo-title">너를 위한 악보</div>
     </div>
 
     <div class="header-spacer"></div>
@@ -762,9 +858,23 @@ footer a:hover { color: var(--primary); }
 
     <!-- Line count (visible in guide mode) -->
     <div class="ctrl-group" id="line-count-group">
-      <span class="ctrl-label" data-i18n="lines">선</span>
+      <span class="ctrl-label" data-i18n="lines">줄 수</span>
       <input type="range" id="line-count" min="1" max="5" value="3" step="1">
       <span id="line-count-val">3</span>
+    </div>
+
+    <!-- Measure controls -->
+    <div class="ctrl-group">
+      <span class="ctrl-label" data-i18n="measures">마디</span>
+      <div class="measure-ctrl">
+        <button class="measure-btn" id="measure-minus" title="마디 빼기">
+          <span class="material-symbols-rounded">remove</span>
+        </button>
+        <span class="measure-count" id="measure-count">4</span>
+        <button class="measure-btn" id="measure-plus" title="마디 더하기">
+          <span class="material-symbols-rounded">add</span>
+        </button>
+      </div>
     </div>
 
     <!-- Song title -->
@@ -859,16 +969,23 @@ footer a:hover { color: var(--primary); }
 <div class="modal-overlay" id="help-modal">
   <div class="modal-box">
     <button class="modal-close" id="modal-close">✕</button>
-    <div class="modal-title">
-      <span class="material-symbols-rounded">help</span>
-      <span data-i18n="helpTitle">사용 방법</span>
+    <div class="modal-title-row">
+      <div class="modal-title">
+        <span class="material-symbols-rounded">help</span>
+        <span data-i18n="helpTitle">사용 방법</span>
+      </div>
+      <button class="example-btn" id="btn-example">
+        <span class="material-symbols-rounded">auto_awesome</span>
+        <span data-i18n="exampleBtn">예시 보기</span>
+      </button>
     </div>
     <ul class="help-list" id="help-list">
-      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 더블클릭하면 그 자리에 글자를 입력할 수 있어요.</div></li>
-      <li><div class="help-num">2</div><div data-i18n="help2">글자 블록을 위아래로 드래그하면 음의 높낮이를 표현할 수 있어요.</div></li>
-      <li><div class="help-num">3</div><div data-i18n="help3">양옆 핸들을 드래그하면 블록의 가로 길이를 조절해 길게 부르는 음을 표현해요.</div></li>
+      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 더블클릭하면 그 자리에 가사를 쓸 수 있어요.</div></li>
+      <li><div class="help-num">2</div><div data-i18n="help2">띄어쓰기로 글자를 나누면 글자 묶음(블록)이 자동으로 만들어져요. 예) "반짝 반짝 작은 별" → 4개 블록</div></li>
+      <li><div class="help-num">3</div><div data-i18n="help3">글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.</div></li>
       <li><div class="help-num">4</div><div data-i18n="help4">상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.</div></li>
-      <li><div class="help-num">5</div><div data-i18n="help5">저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.</div></li>
+      <li><div class="help-num">5</div><div data-i18n="help5">마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.</div></li>
+      <li><div class="help-num">6</div><div data-i18n="help6">저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.</div></li>
     </ul>
   </div>
 </div>
@@ -888,55 +1005,67 @@ footer a:hover { color: var(--primary); }
 ══════════════════════════════════════════════════════ */
 const TRANSLATIONS = {
   ko: {
+    appTitle: '너를 위한 악보',
     tabLearn: '노래 익히기', tabWrite: '가사 쓰기',
-    spaceMode: '배경', guide: '줄 있음', free: '줄 없음', lines: '줄 수',
+    spaceMode: '배경', guide: '줄 있음', free: '줄 없음', lines: '줄 수', measures: '마디',
     songTitlePlaceholder: '노래 제목을 입력하세요',
     saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
-    helpTitle: '사용 방법',
-    help1: '빈 캔버스를 더블클릭하면 그 자리에 글자를 쓸 수 있어요. (Enter로 확정)',
-    help2: '글자 블록을 위아래로 드래그하면 음의 높낮이를 표현할 수 있어요.',
-    help3: '양옆 핸들을 드래그하면 블록의 가로 길이를 조절해 길게 부르는 음을 표현해요.',
+    helpTitle: '사용 방법', exampleBtn: '예시 보기',
+    help1: '빈 캔버스를 더블클릭하면 그 자리에 가사를 쓸 수 있어요. (Enter로 확정)',
+    help2: '띄어쓰기로 글자를 나누면 글자 묶음(블록)이 자동으로 만들어져요. 예) "반짝 반짝 작은 별" → 4개 블록',
+    help3: '글자 블록을 위아래로 드래그하면 음의 높낮이를, 양옆 핸들을 드래그하면 길게 부르는 음(음표 길이)을 표현해요.',
     help4: '상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.',
-    help5: '저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.',
+    help5: '마디 +/- 버튼으로 노래 길이를 조절할 수 있어요. 좌우로 스크롤해서 긴 곡도 만들어 보세요.',
+    help6: '저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.',
     originalScore: '원곡 악보', newLyrics: '새 가사',
     fontSize: '크기', color: '색', slide: '슬라이드',
+    inputHint: 'Enter로 확정 · Esc로 취소 · 띄어쓰기로 글자 묶음 나누기',
     toastCopied: '클립보드에 복사됐어요!', toastSaved: '저장됐어요!', toastLoaded: '불러왔어요!',
-    toastLinkCopied: '링크가 복사됐어요!', toastImgCopied: '이미지가 복사됐어요!'
+    toastLinkCopied: '링크가 복사됐어요!', toastImgCopied: '이미지가 복사됐어요!',
+    toastExample: '예시 악보를 불러왔어요!'
   },
   en: {
+    appTitle: 'Easy Score',
     tabLearn: 'Learn', tabWrite: 'Write',
-    spaceMode: 'Space', guide: 'Guide', free: 'Free', lines: 'Lines',
+    spaceMode: 'Space', guide: 'Guide', free: 'Free', lines: 'Lines', measures: 'Measures',
     songTitlePlaceholder: 'Song title',
     saveJson: 'Save as JSON', loadJson: 'Load JSON',
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
-    helpTitle: 'How to use',
-    help1: 'Double-click the canvas to type at that position.',
-    help2: 'Drag a text block up or down to show melody pitch.',
-    help3: 'Drag the side handles to stretch a block — shows held notes.',
+    helpTitle: 'How to use', exampleBtn: 'Show example',
+    help1: 'Double-click the canvas to type lyrics at that spot. (Enter to confirm)',
+    help2: 'Spaces split your text into separate blocks. E.g. "Twin kle twin kle" → 4 blocks',
+    help3: 'Drag a block up/down for pitch; drag side handles to stretch for held notes.',
     help4: 'Toggle the slide button to show a gliding note on a curve.',
-    help5: 'Save as JSON or copy the share link to restore your work anywhere.',
+    help5: 'Use the measure +/- buttons to add/remove measures. Scroll left/right for longer songs.',
+    help6: 'Save as JSON or copy the share link to restore your work anywhere.',
     originalScore: 'Original', newLyrics: 'New lyrics',
     fontSize: 'Size', color: 'Color', slide: 'Slide',
+    inputHint: 'Enter to confirm · Esc to cancel · Space splits into blocks',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
-    toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!'
+    toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
+    toastExample: 'Example loaded!'
   },
   ja: {
+    appTitle: 'Easy Score',
     tabLearn: '歌を学ぶ', tabWrite: '歌詞を書く',
-    spaceMode: '空間', guide: 'ガイド', free: 'フリー', lines: '線',
+    spaceMode: '空間', guide: 'ガイド', free: 'フリー', lines: '線', measures: '小節',
     songTitlePlaceholder: '曲のタイトル',
     saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
-    helpTitle: '使い方',
-    help1: 'キャンバスをダブルクリックすると、その場所に文字を入力できます。',
-    help2: 'テキストブロックを上下にドラッグして音の高さを表現できます。',
-    help3: '左右のハンドルをドラッグして、ブロックの幅を調整し、伸ばす音を表現できます。',
+    helpTitle: '使い方', exampleBtn: '例を見る',
+    help1: 'キャンバスをダブルクリックすると、その場所に歌詞を入力できます。',
+    help2: 'スペースで区切ると、自動的に文字ブロックに分かれます。例)「きら きら ひかる」→ 3ブロック',
+    help3: 'ブロックを上下にドラッグで音の高さ、左右ハンドルで長く伸ばす音を表現できます。',
     help4: 'スライドボタンをオンにすると、なめらかな音を曲線で表現できます。',
-    help5: 'JSON保存または共有リンクで他のデバイスでも作業を復元できます。',
+    help5: '小節 +/- ボタンで曲の長さを調整。左右スクロールで長い曲も作れます。',
+    help6: 'JSON保存または共有リンクで他のデバイスでも作業を復元できます。',
     originalScore: '原曲', newLyrics: '新しい歌詞',
     fontSize: 'サイズ', color: '色', slide: 'スライド',
+    inputHint: 'Enterで確定・Escで取消・スペースで分割',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
-    toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！'
+    toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
+    toastExample: 'サンプルを読み込みました！'
   }
 };
 const CANVAS_FONTS = { ko: 'Gaegu', en: 'Fraunces', ja: 'Zen Maru Gothic' };
@@ -951,18 +1080,35 @@ function applyI18n() {
     el.placeholder = t(el.dataset.i18nPlaceholder);
   });
   document.documentElement.lang = lang;
-  document.getElementById('text-input-el').style.fontFamily = `'${CANVAS_FONTS[lang]}', sans-serif`;
+  // Logo title — Korean uses Black Han Sans, English/Japanese uses Pretendard GOV bold
+  const titleEl = document.getElementById('logo-title');
+  if (titleEl) {
+    titleEl.textContent = t('appTitle');
+    titleEl.classList.toggle('en', lang !== 'ko');
+  }
+  // Text input font + hint
+  const inp = document.getElementById('text-input-el');
+  if (inp) inp.style.fontFamily = `'${CANVAS_FONTS[lang]}', 'Pretendard GOV', sans-serif`;
+  const hint = document.getElementById('text-input-hint');
+  if (hint) hint.textContent = t('inputHint');
 }
 
 /* ══════════════════════════════════════════════════════
    App State
 ══════════════════════════════════════════════════════ */
+/* Measure layout constants */
+const MEASURE_WIDTH = 260;     // px per measure
+const CANVAS_HEIGHT = 360;     // SVG fixed height
+const CANVAS_PAD_TOP = 28;     // top padding (for measure numbers)
+const CANVAS_PAD_BOT = 24;
+
 let state = {
-  version: 1,
+  version: 2,
   songTitle: '',
   lang: 'ko',
   spaceMode: 'guide',
   lineCount: 3,
+  measures: 4,
   blocks: []            // all blocks, panel: 'original' | 'new'
 };
 let nextId = 1;
@@ -985,27 +1131,87 @@ const blocksWriteBotG  = document.getElementById('blocks-write-bottom');
 const guideLinesWriteBot = document.getElementById('guide-lines-write-bottom');
 
 /* ══════════════════════════════════════════════════════
-   Guide Lines
+   Canvas Sizing (driven by measures)
+══════════════════════════════════════════════════════ */
+function getCanvasWidth() {
+  return state.measures * MEASURE_WIDTH;
+}
+
+function updateCanvasSize() {
+  const w = getCanvasWidth();
+  const h = CANVAS_HEIGHT;
+  [learnSvg, writeSvgTop, writeSvgBot].forEach(svg => {
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.style.width = w + 'px';
+    svg.style.height = h + 'px';
+    // Update background dots rect (if present)
+    const bgRect = svg.querySelector('rect[fill^="url(#dots"]');
+    if (bgRect) {
+      bgRect.setAttribute('width', w);
+      bgRect.setAttribute('height', h);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   Guide Lines + Measure bars
 ══════════════════════════════════════════════════════ */
 function renderGuideLines(g, svg, count, spaceMode) {
   g.innerHTML = '';
-  if (spaceMode !== 'guide') return;
-  const h = svg.clientHeight || 400;
-  const w = svg.clientWidth || 800;
-  const step = h / (count + 1);
-  for (let i = 1; i <= count; i++) {
-    const y = step * i;
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1','0');
-    line.setAttribute('y1', y);
-    line.setAttribute('x2', w);
-    line.setAttribute('y2', y);
-    line.setAttribute('stroke','#5B8DEF');
-    line.setAttribute('stroke-width','1.2');
-    line.setAttribute('stroke-dasharray','6 6');
-    line.setAttribute('opacity','0.22');
+  const w = getCanvasWidth();
+  const h = CANVAS_HEIGHT;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // Measure separator lines (vertical) + measure numbers
+  for (let i = 0; i <= state.measures; i++) {
+    const x = i * MEASURE_WIDTH;
+    const line = document.createElementNS(NS,'line');
+    line.setAttribute('x1', x);
+    line.setAttribute('y1', CANVAS_PAD_TOP);
+    line.setAttribute('x2', x);
+    line.setAttribute('y2', h - CANVAS_PAD_BOT);
+    line.setAttribute('stroke', i === 0 || i === state.measures ? '#5B8DEF' : '#5B8DEF');
+    line.setAttribute('stroke-width', i === 0 || i === state.measures ? '2' : '1.2');
+    line.setAttribute('opacity', i === 0 || i === state.measures ? '0.55' : '0.30');
     line.setAttribute('pointer-events','none');
     g.appendChild(line);
+
+    // Measure number (above each measure start)
+    if (i < state.measures) {
+      const txt = document.createElementNS(NS,'text');
+      txt.setAttribute('x', x + 8);
+      txt.setAttribute('y', 18);
+      txt.setAttribute('font-size', '12');
+      txt.setAttribute('font-weight', '700');
+      txt.setAttribute('fill', '#5B8DEF');
+      txt.setAttribute('opacity', '0.55');
+      txt.setAttribute('font-family', "'Pretendard GOV', sans-serif");
+      txt.setAttribute('pointer-events','none');
+      txt.textContent = `${i + 1}`;
+      g.appendChild(txt);
+    }
+  }
+
+  // Horizontal pitch guide lines (only in guide mode)
+  if (spaceMode === 'guide') {
+    const usableH = h - CANVAS_PAD_TOP - CANVAS_PAD_BOT;
+    const step = usableH / (count + 1);
+    for (let i = 1; i <= count; i++) {
+      const y = CANVAS_PAD_TOP + step * i;
+      const line = document.createElementNS(NS,'line');
+      line.setAttribute('x1','0');
+      line.setAttribute('y1', y);
+      line.setAttribute('x2', w);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke','#5B8DEF');
+      line.setAttribute('stroke-width','1.2');
+      line.setAttribute('stroke-dasharray','6 6');
+      line.setAttribute('opacity','0.22');
+      line.setAttribute('pointer-events','none');
+      g.appendChild(line);
+    }
   }
 }
 
@@ -1442,36 +1648,73 @@ function beginTextInput(svgEl, svgX, svgY, existingBlock, panel) {
   });
 }
 
+function estimateWordWidth(word, fs) {
+  const charCount = Array.from(word).length;
+  // Roughly: CJK ≈ 1.0×fs, Latin ≈ 0.55×fs. Use 0.85 as middle-ground.
+  return Math.max(50, charCount * fs * 0.85);
+}
+
 function commitTextInput() {
   if (!textOverlay.classList.contains('active')) return;
   if (cancelNextCommit) { cancelNextCommit = false; textOverlay.classList.remove('active'); textInputEl.value = ''; return; }
   if (isComposing) return; // IME 조합 중에는 commit 미루기
 
   const val = textInputEl.value.trim();
+  const fs = parseInt(textInputEl.style.fontSize) || 32;
+  const maxX = getCanvasWidth();
+
   if (editingBlock) {
     if (val === '') {
       state.blocks = state.blocks.filter(b => b.id !== editingBlock.id);
       if (selectedId === editingBlock.id) deselectAll();
     } else {
-      editingBlock.text = val;
+      // For an existing block, treat the first whitespace-separated word as that
+      // block's new text, and create additional blocks for any extra words.
+      const words = val.split(/\s+/).filter(w => w.length > 0);
+      editingBlock.text = words[0];
+      editingBlock.width = estimateWordWidth(words[0], editingBlock.fontSize || fs);
+      let curX = editingBlock.x + editingBlock.width + 18;
+      for (let i = 1; i < words.length; i++) {
+        const w = estimateWordWidth(words[i], editingBlock.fontSize || fs);
+        if (curX + w > maxX - 8) curX = Math.max(20, maxX - w - 8);
+        state.blocks.push({
+          id: nextId++,
+          text: words[i],
+          x: curX,
+          y: editingBlock.y,
+          width: w,
+          fontSize: editingBlock.fontSize || fs,
+          slide: false,
+          color: editingBlock.color || '#2A2D3F',
+          panel: editingBlock.panel
+        });
+        curX += w + 18;
+      }
     }
   } else if (val !== '') {
-    const fs = parseInt(textInputEl.style.fontSize) || 32;
-    const charCount = Array.from(val).length;
-    const estW = Math.max(80, charCount * fs * 0.85);
-    const block = {
-      id: nextId++,
-      text: val,
-      x: inputOriginX,
-      y: inputOriginY,
-      width: estW,
-      fontSize: fs,
-      slide: false,
-      color: '#2A2D3F',
-      panel: editingPanel
-    };
-    state.blocks.push(block);
-    selectBlock(block.id);
+    // New input — split by whitespace into separate blocks
+    const words = val.split(/\s+/).filter(w => w.length > 0);
+    let curX = inputOriginX;
+    let firstId = null;
+    words.forEach((word) => {
+      const w = estimateWordWidth(word, fs);
+      if (curX + w > maxX - 8) curX = Math.max(20, maxX - w - 8);
+      const block = {
+        id: nextId++,
+        text: word,
+        x: curX,
+        y: inputOriginY,
+        width: w,
+        fontSize: fs,
+        slide: false,
+        color: '#2A2D3F',
+        panel: editingPanel
+      };
+      state.blocks.push(block);
+      if (firstId === null) firstId = block.id;
+      curX += w + 18;
+    });
+    if (firstId !== null) selectBlock(firstId);
   }
   textOverlay.classList.remove('active');
   textInputEl.value = '';
@@ -1612,6 +1855,47 @@ lineCountSlider.addEventListener('input', () => {
 });
 
 /* ══════════════════════════════════════════════════════
+   Measure +/- controls
+══════════════════════════════════════════════════════ */
+const measureCountEl = document.getElementById('measure-count');
+const measurePlusBtn = document.getElementById('measure-plus');
+const measureMinusBtn = document.getElementById('measure-minus');
+
+const MAX_MEASURES = 64;
+const MIN_MEASURES = 1;
+
+function updateMeasureUI() {
+  measureCountEl.textContent = state.measures;
+  measureMinusBtn.disabled = state.measures <= MIN_MEASURES;
+  measurePlusBtn.disabled = state.measures >= MAX_MEASURES;
+}
+
+function setMeasures(n) {
+  const next = Math.max(MIN_MEASURES, Math.min(MAX_MEASURES, n));
+  if (next === state.measures) return;
+  state.measures = next;
+  // Trim any blocks now outside the canvas
+  const maxX = getCanvasWidth();
+  state.blocks.forEach(b => {
+    if (b.x + (b.width || 0) > maxX - 4) {
+      b.x = Math.max(8, maxX - (b.width || 60) - 8);
+    }
+  });
+  updateCanvasSize();
+  renderAllGuideLines();
+  renderBlocks();
+  updateMeasureUI();
+}
+
+measurePlusBtn.addEventListener('click', () => {
+  setMeasures(state.measures + 1);
+  // Auto-scroll the active canvas to the new measure
+  const wrapper = (currentTab === 'learn' ? learnSvg : writeSvgBot).parentElement;
+  if (wrapper) wrapper.scrollTo({ left: wrapper.scrollWidth, behavior: 'smooth' });
+});
+measureMinusBtn.addEventListener('click', () => setMeasures(state.measures - 1));
+
+/* ══════════════════════════════════════════════════════
    Song Title
 ══════════════════════════════════════════════════════ */
 document.getElementById('song-title').addEventListener('input', (e) => {
@@ -1655,11 +1939,12 @@ setupDropdown('btn-export','export-menu');
 ══════════════════════════════════════════════════════ */
 function getStateSnapshot() {
   return {
-    version: 1,
+    version: 2,
     songTitle: state.songTitle,
     lang: state.lang,
     spaceMode: state.spaceMode,
     lineCount: state.lineCount,
+    measures: state.measures,
     blocks: state.blocks.map(b => ({ ...b }))
   };
 }
@@ -1702,6 +1987,7 @@ function applyLoadedState(loaded) {
   state.lang = loaded.lang || 'ko';
   state.spaceMode = loaded.spaceMode || 'guide';
   state.lineCount = loaded.lineCount || 3;
+  state.measures = Math.max(MIN_MEASURES, Math.min(MAX_MEASURES, loaded.measures || 4));
   state.blocks = (loaded.blocks || []).map(b => ({ ...b }));
   nextId = Math.max(nextId, ...state.blocks.map(b => b.id + 1), 1);
   lang = state.lang;
@@ -1720,8 +2006,10 @@ function applyLoadedState(loaded) {
   }
   applyI18n();
   deselectAll();
+  updateCanvasSize();
   renderAllGuideLines();
   renderBlocks();
+  updateMeasureUI();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1812,6 +2100,46 @@ helpModal.addEventListener('click', (e) => {
 });
 
 /* ══════════════════════════════════════════════════════
+   Example loader — "Twinkle Twinkle Little Star" preview
+══════════════════════════════════════════════════════ */
+function loadExample() {
+  state.songTitle = '반짝반짝 작은 별';
+  state.spaceMode = 'guide';
+  state.lineCount = 3;
+  state.measures = 4;
+  nextId = 1;
+  const C = { ink: '#2A2D3F', blue: '#5B8DEF', mint: '#7DD3B8', peach: '#FFB088', rose: '#F4A6B7' };
+  // y values mapped to the new CANVAS_HEIGHT (360). 3 guide lines at ~110/192/274.
+  state.blocks = [
+    { id: nextId++, text: '반짝', x: 30,  y: 240, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '반짝', x: 160, y: 200, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '작은', x: 300, y: 160, width: 110, fontSize: 36, slide: false, color: C.blue,  panel: 'original' },
+    { id: nextId++, text: '별',   x: 430, y: 130, width: 70,  fontSize: 40, slide: false, color: C.peach, panel: 'original' },
+    { id: nextId++, text: '아름', x: 540, y: 160, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '답게', x: 670, y: 200, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '비치', x: 800, y: 200, width: 110, fontSize: 36, slide: false, color: C.mint,  panel: 'original' },
+    { id: nextId++, text: '네',   x: 930, y: 240, width: 170, fontSize: 36, slide: true,  color: C.rose,  panel: 'original' },
+  ];
+  document.getElementById('song-title').value = state.songTitle;
+  document.getElementById('mode-guide').classList.add('active');
+  document.getElementById('mode-free').classList.remove('active');
+  document.getElementById('line-count-group').style.display = 'flex';
+  lineCountSlider.value = state.lineCount;
+  lineCountVal.textContent = state.lineCount;
+  updateCanvasSize();
+  renderAllGuideLines();
+  deselectAll();
+  renderBlocks();
+  updateMeasureUI();
+}
+
+document.getElementById('btn-example').addEventListener('click', () => {
+  loadExample();
+  helpModal.classList.remove('open');
+  showToast(t('toastExample'));
+});
+
+/* ══════════════════════════════════════════════════════
    Toast
 ══════════════════════════════════════════════════════ */
 let toastTimeout;
@@ -1823,15 +2151,8 @@ function showToast(msg) {
   toastTimeout = setTimeout(() => el.classList.remove('show'), 2400);
 }
 
-/* ══════════════════════════════════════════════════════
-   Resize → Redraw guide lines
-══════════════════════════════════════════════════════ */
-const ro = new ResizeObserver(() => {
-  renderAllGuideLines();
-});
-ro.observe(learnSvg.parentElement);
-ro.observe(writeSvgTop.parentElement);
-ro.observe(writeSvgBot.parentElement);
+/* Canvas size is driven by state.measures, not by container size,
+   so no ResizeObserver is needed for guide line redraws. */
 
 /* ══════════════════════════════════════════════════════
    Keyboard shortcuts
@@ -1855,30 +2176,18 @@ document.addEventListener('keydown', (e) => {
 ══════════════════════════════════════════════════════ */
 function init() {
   applyI18n();
+  updateCanvasSize();
+  updateMeasureUI();
   loadFromHash();
   renderAllGuideLines();
   renderBlocks();
-
-  // Add a few sample blocks if empty
-  if (state.blocks.length === 0) {
-    const sampleBlocks = [
-      { id: nextId++, text: '반', x: 60, y: 180, width: 80, fontSize: 36, slide: false, color: '#2A2D3F', panel: 'original' },
-      { id: nextId++, text: '짝', x: 160, y: 140, width: 80, fontSize: 36, slide: false, color: '#2A2D3F', panel: 'original' },
-      { id: nextId++, text: '반', x: 260, y: 100, width: 80, fontSize: 36, slide: false, color: '#2A2D3F', panel: 'original' },
-      { id: nextId++, text: '짝', x: 360, y: 140, width: 80, fontSize: 36, slide: false, color: '#5B8DEF', panel: 'original' },
-      { id: nextId++, text: '반짝', x: 460, y: 120, width: 140, fontSize: 36, slide: true, color: '#7DD3B8', panel: 'original' },
-      { id: nextId++, text: '작은', x: 620, y: 80, width: 100, fontSize: 36, slide: false, color: '#2A2D3F', panel: 'original' },
-      { id: nextId++, text: '별', x: 740, y: 60, width: 70, fontSize: 40, slide: false, color: '#FFB088', panel: 'original' },
-    ];
-    state.blocks = sampleBlocks;
-    renderBlocks();
-  }
+  // Start with an empty canvas — users open the Help modal and click
+  // "예시 보기" to see the sample score.
 }
 
 // Handle window resize for toolbar position
 window.addEventListener('resize', () => {
   if (selectedId !== null) positionSelToolbar();
-  renderAllGuideLines();
 });
 
 init();
