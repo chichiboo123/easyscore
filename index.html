@@ -366,16 +366,14 @@ input[type="range"]::-moz-range-thumb {
 .canvas-wrapper {
   position: relative;
   flex: 1;
-  overflow: auto;          /* enable scroll for long songs */
+  overflow: auto;
   background: var(--bg);
-  scroll-behavior: smooth;
 }
-.canvas-wrapper::-webkit-scrollbar { width: 12px; height: 12px; }
-.canvas-wrapper::-webkit-scrollbar-track { background: var(--bg); }
+.canvas-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+.canvas-wrapper::-webkit-scrollbar-track { background: transparent; }
 .canvas-wrapper::-webkit-scrollbar-thumb {
   background: var(--primary-soft);
-  border-radius: 8px;
-  border: 3px solid var(--bg);
+  border-radius: 4px;
 }
 .canvas-wrapper::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
@@ -383,23 +381,22 @@ input[type="range"]::-moz-range-thumb {
   flex: 0 0 46%;
   border-bottom: 2px dashed var(--primary-soft);
 }
-.canvas-wrapper.write-bottom {
-  flex: 1;
-}
+.canvas-wrapper.write-bottom { flex: 1; }
 
 .write-panel-label {
-  position: absolute;
+  position: sticky;
   top: 10px;
   left: 16px;
+  display: inline-block;
   font-size: 13px;
   font-weight: 700;
   color: var(--primary);
   background: var(--primary-soft);
   padding: 4px 12px;
   border-radius: 999px;
-  letter-spacing: 0;
-  pointer-events: none;
   z-index: 10;
+  margin: 10px 0 0 16px;
+  pointer-events: none;
 }
 
 svg.score-canvas {
@@ -407,12 +404,28 @@ svg.score-canvas {
   cursor: crosshair;
   background: var(--surface);
   user-select: none;
-  /* width/height set dynamically based on measures */
 }
 
-/* "panning" cursor when dragging empty space */
-.canvas-wrapper.panning { cursor: grabbing; }
-.canvas-wrapper.panning svg.score-canvas { cursor: grabbing; }
+/* empty canvas hint overlay */
+.canvas-empty-hint {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--ink-soft);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.55;
+  z-index: 2;
+}
+.canvas-empty-hint .material-symbols-rounded {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+.canvas-empty-hint p { font-size: 14px; font-weight: 600; }
 
 /* ── Measure controls ── */
 .measure-ctrl {
@@ -887,6 +900,10 @@ footer a:hover { color: var(--primary); }
   <div id="canvas-area">
     <!-- LEARN tab: single canvas -->
     <div id="learn-canvas-wrap" class="canvas-wrapper">
+      <div class="canvas-empty-hint" id="learn-empty-hint">
+        <span class="material-symbols-rounded">edit_note</span>
+        <p>더블클릭하면 가사를 입력할 수 있어요</p>
+      </div>
       <svg class="score-canvas" id="learn-svg" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="dots-learn" patternUnits="userSpaceOnUse" width="20" height="20">
@@ -1094,13 +1111,65 @@ function applyI18n() {
 }
 
 /* ══════════════════════════════════════════════════════
-   App State
+   App State + Layout constants
 ══════════════════════════════════════════════════════ */
-/* Measure layout constants */
-const MEASURE_WIDTH = 260;     // px per measure
-const CANVAS_HEIGHT = 360;     // SVG fixed height
-const CANVAS_PAD_TOP = 28;     // top padding (for measure numbers)
-const CANVAS_PAD_BOT = 24;
+/*
+ * Resolution-independent coordinate system:
+ *   block.x  = absolute position across all measures in CANONICAL units
+ *              (CANONICAL_MW units = 1 measure width)
+ *   block.y  = y within a single row  (0 … ROW_HEIGHT, in screen px)
+ *   block.width = width in CANONICAL units
+ *
+ * On render:  getMeasureScale() = getMeasureWidth() / CANONICAL_MW
+ *             svgX = (block.x % rowCanonW) * scale
+ *             svgY = rowIndex * ROW_HEIGHT + block.y
+ */
+const CANONICAL_MW   = 200;   // canonical units per measure (storage)
+const ROW_HEIGHT     = 300;   // px per row in the SVG
+const CANVAS_PAD_TOP = 28;
+const CANVAS_PAD_BOT = 20;
+const MPR_PC         = 8;     // measures per row on desktop
+const MPR_TABLET     = 4;     // measures per row on tablet
+const BREAK_PX       = 900;   // viewport width breakpoint
+
+function getMeasuresPerRow() {
+  return window.innerWidth >= BREAK_PX ? MPR_PC : MPR_TABLET;
+}
+function getMeasureWidth() {
+  const mpr = getMeasuresPerRow();
+  const avail = (learnSvg?.parentElement?.clientWidth) || window.innerWidth;
+  return Math.max(100, Math.floor(avail / mpr));
+}
+function getMeasureScale() { return getMeasureWidth() / CANONICAL_MW; }
+function getNumRows()       { return Math.max(1, Math.ceil(state.measures / getMeasuresPerRow())); }
+function getCanvasWidth()   { return getMeasuresPerRow() * getMeasureWidth(); }
+function getCanvasHeight()  { return getNumRows() * ROW_HEIGHT; }
+
+// Convert block canonical coords → absolute SVG pixel coords for rendering
+function getBlockRenderPos(block) {
+  const mpr  = getMeasuresPerRow();
+  const rowW = mpr * CANONICAL_MW;
+  const row  = Math.floor(block.x / rowW);
+  const localX = block.x - row * rowW;
+  const scale = getMeasureScale();
+  return {
+    svgX:        localX * scale,
+    svgY:        row * ROW_HEIGHT + block.y,
+    renderWidth: (block.width || CANONICAL_MW) * scale,
+    row,
+    scale
+  };
+}
+
+// Convert absolute SVG click coords → block canonical coords (for creating blocks)
+function svgToBlockCoords(svgX, svgY) {
+  const scale = getMeasureScale();
+  const mpr   = getMeasuresPerRow();
+  const row   = Math.floor(svgY / ROW_HEIGHT);
+  const localY = svgY - row * ROW_HEIGHT;
+  const absX   = row * mpr * CANONICAL_MW + svgX / scale;
+  return { blockX: absX, blockY: localY };
+}
 
 let state = {
   version: 2,
@@ -1131,92 +1200,94 @@ const blocksWriteBotG  = document.getElementById('blocks-write-bottom');
 const guideLinesWriteBot = document.getElementById('guide-lines-write-bottom');
 
 /* ══════════════════════════════════════════════════════
-   Canvas Sizing (driven by measures)
+   Canvas Sizing
 ══════════════════════════════════════════════════════ */
-function getCanvasWidth() {
-  return state.measures * MEASURE_WIDTH;
-}
-
 function updateCanvasSize() {
   const w = getCanvasWidth();
-  const h = CANVAS_HEIGHT;
+  const h = getCanvasHeight();
   [learnSvg, writeSvgTop, writeSvgBot].forEach(svg => {
     svg.setAttribute('width', w);
     svg.setAttribute('height', h);
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    svg.style.width = w + 'px';
+    svg.style.width  = w + 'px';
     svg.style.height = h + 'px';
-    // Update background dots rect (if present)
     const bgRect = svg.querySelector('rect[fill^="url(#dots"]');
-    if (bgRect) {
-      bgRect.setAttribute('width', w);
-      bgRect.setAttribute('height', h);
-    }
+    if (bgRect) { bgRect.setAttribute('width', w); bgRect.setAttribute('height', h); }
   });
 }
 
 /* ══════════════════════════════════════════════════════
-   Guide Lines + Measure bars
+   Guide Lines + Measure bars  (drawn per-row)
 ══════════════════════════════════════════════════════ */
-function renderGuideLines(g, svg, count, spaceMode) {
+function renderGuideLines(g, _svg, count, spaceMode) {
   g.innerHTML = '';
-  const w = getCanvasWidth();
-  const h = CANVAS_HEIGHT;
-  const NS = 'http://www.w3.org/2000/svg';
+  const NS   = 'http://www.w3.org/2000/svg';
+  const cw   = getCanvasWidth();
+  const mw   = getMeasureWidth();
+  const mpr  = getMeasuresPerRow();
+  const rows = getNumRows();
+  const usableH = ROW_HEIGHT - CANVAS_PAD_TOP - CANVAS_PAD_BOT;
 
-  // Measure separator lines (vertical) + measure numbers
-  for (let i = 0; i <= state.measures; i++) {
-    const x = i * MEASURE_WIDTH;
-    const line = document.createElementNS(NS,'line');
-    line.setAttribute('x1', x);
-    line.setAttribute('y1', CANVAS_PAD_TOP);
-    line.setAttribute('x2', x);
-    line.setAttribute('y2', h - CANVAS_PAD_BOT);
-    line.setAttribute('stroke', i === 0 || i === state.measures ? '#5B8DEF' : '#5B8DEF');
-    line.setAttribute('stroke-width', i === 0 || i === state.measures ? '2' : '1.2');
-    line.setAttribute('opacity', i === 0 || i === state.measures ? '0.55' : '0.30');
-    line.setAttribute('pointer-events','none');
-    g.appendChild(line);
+  for (let r = 0; r < rows; r++) {
+    const rowY = r * ROW_HEIGHT;
 
-    // Measure number (above each measure start)
-    if (i < state.measures) {
-      const txt = document.createElementNS(NS,'text');
-      txt.setAttribute('x', x + 8);
-      txt.setAttribute('y', 18);
-      txt.setAttribute('font-size', '12');
-      txt.setAttribute('font-weight', '700');
-      txt.setAttribute('fill', '#5B8DEF');
-      txt.setAttribute('opacity', '0.55');
-      txt.setAttribute('font-family', "'Pretendard GOV', sans-serif");
-      txt.setAttribute('pointer-events','none');
-      txt.textContent = `${i + 1}`;
-      g.appendChild(txt);
+    // Row separator (top border of each row, full width)
+    if (r > 0) {
+      const sep = document.createElementNS(NS,'line');
+      sep.setAttribute('x1','0'); sep.setAttribute('y1', rowY);
+      sep.setAttribute('x2', cw); sep.setAttribute('y2', rowY);
+      sep.setAttribute('stroke','#5B8DEF'); sep.setAttribute('stroke-width','1.5');
+      sep.setAttribute('opacity','0.30'); sep.setAttribute('pointer-events','none');
+      g.appendChild(sep);
     }
-  }
 
-  // Horizontal pitch guide lines (only in guide mode)
-  if (spaceMode === 'guide') {
-    const usableH = h - CANVAS_PAD_TOP - CANVAS_PAD_BOT;
-    const step = usableH / (count + 1);
-    for (let i = 1; i <= count; i++) {
-      const y = CANVAS_PAD_TOP + step * i;
-      const line = document.createElementNS(NS,'line');
-      line.setAttribute('x1','0');
-      line.setAttribute('y1', y);
-      line.setAttribute('x2', w);
-      line.setAttribute('y2', y);
-      line.setAttribute('stroke','#5B8DEF');
-      line.setAttribute('stroke-width','1.2');
-      line.setAttribute('stroke-dasharray','6 6');
-      line.setAttribute('opacity','0.22');
-      line.setAttribute('pointer-events','none');
-      g.appendChild(line);
+    // Horizontal pitch guide lines per row
+    if (spaceMode === 'guide') {
+      const step = usableH / (count + 1);
+      for (let i = 1; i <= count; i++) {
+        const y = rowY + CANVAS_PAD_TOP + step * i;
+        const line = document.createElementNS(NS,'line');
+        line.setAttribute('x1','0'); line.setAttribute('y1', y);
+        line.setAttribute('x2', cw); line.setAttribute('y2', y);
+        line.setAttribute('stroke','#5B8DEF'); line.setAttribute('stroke-width','1.2');
+        line.setAttribute('stroke-dasharray','6 6'); line.setAttribute('opacity','0.20');
+        line.setAttribute('pointer-events','none');
+        g.appendChild(line);
+      }
+    }
+
+    // Vertical measure separator lines + measure numbers
+    const measuresInRow = (r < rows - 1) ? mpr : (state.measures - r * mpr);
+    for (let m = 0; m <= measuresInRow; m++) {
+      const x = m * mw;
+      const isEdge = m === 0 || m === measuresInRow;
+      const vline = document.createElementNS(NS,'line');
+      vline.setAttribute('x1', x); vline.setAttribute('y1', rowY + CANVAS_PAD_TOP);
+      vline.setAttribute('x2', x); vline.setAttribute('y2', rowY + ROW_HEIGHT - CANVAS_PAD_BOT);
+      vline.setAttribute('stroke','#5B8DEF');
+      vline.setAttribute('stroke-width', isEdge ? '2' : '1.2');
+      vline.setAttribute('opacity', isEdge ? '0.55' : '0.28');
+      vline.setAttribute('pointer-events','none');
+      g.appendChild(vline);
+
+      // Measure number label
+      if (m < measuresInRow) {
+        const globalMeasure = r * mpr + m;
+        const txt = document.createElementNS(NS,'text');
+        txt.setAttribute('x', x + 6); txt.setAttribute('y', rowY + 20);
+        txt.setAttribute('font-size','12'); txt.setAttribute('font-weight','700');
+        txt.setAttribute('fill','#5B8DEF'); txt.setAttribute('opacity','0.50');
+        txt.setAttribute('font-family',"'Pretendard GOV', sans-serif");
+        txt.setAttribute('pointer-events','none');
+        txt.textContent = `${globalMeasure + 1}`;
+        g.appendChild(txt);
+      }
     }
   }
 }
 
 function renderAllGuideLines() {
-  renderGuideLines(guideLinesLearn, learnSvg, state.lineCount, state.spaceMode);
+  renderGuideLines(guideLinesLearn,    learnSvg,    state.lineCount, state.spaceMode);
   renderGuideLines(guideLinesWriteTop, writeSvgTop, state.lineCount, state.spaceMode);
   renderGuideLines(guideLinesWriteBot, writeSvgBot, state.lineCount, state.spaceMode);
 }
@@ -1237,128 +1308,83 @@ function createSlidePath(x, y, width) {
 }
 
 function makeSvgBlock(block) {
+  const { svgX: x, svgY: y, renderWidth: rw } = getBlockRenderPos(block);
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
   g.setAttribute('data-id', block.id);
   g.setAttribute('class','block-group');
   g.style.cursor = 'grab';
 
-  const font = getCanvasFont();
-  const fs = block.fontSize || 28;
+  const font  = getCanvasFont();
+  const fs    = block.fontSize || 28;
   const color = block.color || '#2A2D3F';
-  const w = block.width || 120;
-  const x = block.x;
-  const y = block.y;
 
   if (block.slide) {
-    // Slide: textPath on a curve
     const pathId = `slide-path-${block.id}`;
-    const d = createSlidePath(x, y, w);
-    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('id', pathId);
-    path.setAttribute('d', d);
-    path.setAttribute('fill','none');
-    defs.appendChild(path);
-    g.appendChild(defs);
+    const d      = createSlidePath(x, y, rw);
+    const defs   = document.createElementNS('http://www.w3.org/2000/svg','defs');
+    const path   = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('id', pathId); path.setAttribute('d', d); path.setAttribute('fill','none');
+    defs.appendChild(path); g.appendChild(defs);
 
-    // Visible curve (faint)
     const visPath = document.createElementNS('http://www.w3.org/2000/svg','path');
-    visPath.setAttribute('d', d);
-    visPath.setAttribute('fill','none');
-    visPath.setAttribute('stroke', color);
-    visPath.setAttribute('stroke-width','1.5');
-    visPath.setAttribute('opacity','0.25');
-    visPath.setAttribute('pointer-events','none');
+    visPath.setAttribute('d', d); visPath.setAttribute('fill','none');
+    visPath.setAttribute('stroke', color); visPath.setAttribute('stroke-width','1.5');
+    visPath.setAttribute('opacity','0.25'); visPath.setAttribute('pointer-events','none');
     g.appendChild(visPath);
 
     const textEl = document.createElementNS('http://www.w3.org/2000/svg','text');
     textEl.setAttribute('font-family', `'${font}', sans-serif`);
-    textEl.setAttribute('font-size', fs);
-    textEl.setAttribute('fill', color);
+    textEl.setAttribute('font-size', fs); textEl.setAttribute('fill', color);
     textEl.setAttribute('pointer-events','none');
-
     const tp = document.createElementNS('http://www.w3.org/2000/svg','textPath');
-    tp.setAttribute('href', '#' + pathId);
-    tp.setAttribute('textLength', w);
-    tp.setAttribute('lengthAdjust','spacingAndGlyphs');
-    tp.textContent = block.text || '';
-    textEl.appendChild(tp);
-    g.appendChild(textEl);
+    tp.setAttribute('href', '#' + pathId); tp.setAttribute('textLength', rw);
+    tp.setAttribute('lengthAdjust','spacingAndGlyphs'); tp.textContent = block.text || '';
+    textEl.appendChild(tp); g.appendChild(textEl);
 
-    // Bounding box for interaction (invisible)
     const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    bbox.setAttribute('x', x);
-    bbox.setAttribute('y', y - fs * 0.2);
-    bbox.setAttribute('width', w);
-    bbox.setAttribute('height', fs + 60);
-    bbox.setAttribute('fill','transparent');
-    bbox.setAttribute('class','block-hitbox');
+    bbox.setAttribute('x', x); bbox.setAttribute('y', y - fs * 0.2);
+    bbox.setAttribute('width', rw); bbox.setAttribute('height', fs + 60);
+    bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
     g.appendChild(bbox);
   } else {
-    // Normal: SVG text with textLength stretch
     const textEl = document.createElementNS('http://www.w3.org/2000/svg','text');
-    textEl.setAttribute('x', x);
-    textEl.setAttribute('y', y);
+    textEl.setAttribute('x', x); textEl.setAttribute('y', y);
     textEl.setAttribute('font-family', `'${font}', sans-serif`);
-    textEl.setAttribute('font-size', fs);
-    textEl.setAttribute('fill', color);
-    textEl.setAttribute('textLength', w);
-    textEl.setAttribute('lengthAdjust','spacingAndGlyphs');
-    textEl.setAttribute('pointer-events','none');
-    textEl.textContent = block.text || '';
+    textEl.setAttribute('font-size', fs); textEl.setAttribute('fill', color);
+    textEl.setAttribute('textLength', rw); textEl.setAttribute('lengthAdjust','spacingAndGlyphs');
+    textEl.setAttribute('pointer-events','none'); textEl.textContent = block.text || '';
     g.appendChild(textEl);
 
-    // Hitbox
-    const hitH = fs * 1.3;
     const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    bbox.setAttribute('x', x);
-    bbox.setAttribute('y', y - fs);
-    bbox.setAttribute('width', w);
-    bbox.setAttribute('height', hitH);
-    bbox.setAttribute('fill','transparent');
-    bbox.setAttribute('class','block-hitbox');
+    bbox.setAttribute('x', x); bbox.setAttribute('y', y - fs);
+    bbox.setAttribute('width', rw); bbox.setAttribute('height', fs * 1.3);
+    bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
     g.appendChild(bbox);
   }
-
   return g;
 }
 
 function makeSelectionOverlay(block, svgEl) {
-  // Remove old
   const old = svgEl.querySelector('.sel-overlay');
   if (old) old.remove();
 
-  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.setAttribute('class','sel-overlay');
-  g.setAttribute('pointer-events','all');
+  const { svgX, svgY, renderWidth: rw } = getBlockRenderPos(block);
+  const g  = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class','sel-overlay'); g.setAttribute('pointer-events','all');
 
   const fs = block.fontSize || 28;
-  const w = block.width || 120;
-  const x = block.x;
-  const y = block.slide ? block.y - fs * 0.2 : block.y - fs;
-  const h = block.slide ? fs + 60 : fs * 1.3;
+  const rx = svgX, ry = block.slide ? svgY - fs * 0.2 : svgY - fs;
+  const rh = block.slide ? fs + 60 : fs * 1.3;
 
-  // Selection rect
   const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-  rect.setAttribute('x', x - 2);
-  rect.setAttribute('y', y - 2);
-  rect.setAttribute('width', w + 4);
-  rect.setAttribute('height', h + 4);
-  rect.setAttribute('fill','none');
-  rect.setAttribute('stroke','#5B8DEF');
-  rect.setAttribute('stroke-width','2');
-  rect.setAttribute('stroke-dasharray','5 3');
-  rect.setAttribute('rx','6');
-  g.appendChild(rect);
+  rect.setAttribute('x', rx - 2); rect.setAttribute('y', ry - 2);
+  rect.setAttribute('width', rw + 4); rect.setAttribute('height', rh + 4);
+  rect.setAttribute('fill','rgba(91,141,239,0.06)'); rect.setAttribute('stroke','#5B8DEF');
+  rect.setAttribute('stroke-width','2'); rect.setAttribute('stroke-dasharray','5 3');
+  rect.setAttribute('rx','6'); g.appendChild(rect);
 
-  // Left handle
-  const lh = makeHandle(x - 2, y + h / 2, 'left');
-  g.appendChild(lh);
-
-  // Right handle
-  const rh = makeHandle(x + w + 2, y + h / 2, 'right');
-  g.appendChild(rh);
-
+  g.appendChild(makeHandle(rx - 2,      ry + rh / 2, 'left'));
+  g.appendChild(makeHandle(rx + rw + 2, ry + rh / 2, 'right'));
   svgEl.appendChild(g);
   return g;
 }
@@ -1460,20 +1486,21 @@ function positionSelToolbar() {
   const svgEl = getActiveSvg();
   if (!svgEl) return;
   const svgRect = svgEl.getBoundingClientRect();
-  const bx = svgRect.left + block.x;
-  const by = svgRect.top + block.y - (block.fontSize || 28) - 60;
-  const toolW = 480;
-  let left = Math.max(8, Math.min(bx, window.innerWidth - toolW - 8));
-  let top = Math.max(8, by);
-  selToolbar.style.left = left + 'px';
-  selToolbar.style.top = top + 'px';
+  const { svgX, svgY } = getBlockRenderPos(block);
+  const bx = svgRect.left + svgX;
+  const by = svgRect.top + svgY - (block.fontSize || 32) - 60;
+  const toolW = 500;
+  selToolbar.style.left = Math.max(8, Math.min(bx, window.innerWidth - toolW - 8)) + 'px';
+  selToolbar.style.top  = Math.max(8, by) + 'px';
   updateSelToolbar(block);
 }
 
 /* ══════════════════════════════════════════════════════
    Interaction: Drag, Handle, DblClick
 ══════════════════════════════════════════════════════ */
-let dragState = null; // { type: 'move'|'left-handle'|'right-handle', blockId, startX, startY, origX, origY, origW, svgEl }
+// dragState.origX/origW in CANONICAL units; startX/startY in screen px (for delta calc)
+let dragState = null;
+let hasDragged = false;
 
 function getSvgPoint(svgEl, clientX, clientY) {
   const rect = svgEl.getBoundingClientRect();
@@ -1481,20 +1508,32 @@ function getSvgPoint(svgEl, clientX, clientY) {
 }
 
 function setupSvgInteraction(svgEl, panel) {
-  // Double-click → create block
+
+  // ── Double-click: empty area → new block; existing block → edit
   svgEl.addEventListener('dblclick', (e) => {
-    if (e.target.closest('.block-group') || e.target.closest('.sel-overlay')) return;
-    if (panel === 'top') return; // read-only
+    if (panel === 'top') return;
+    const blockGroup = e.target.closest('.block-group');
+    if (blockGroup) {
+      const id = parseInt(blockGroup.dataset.id);
+      const block = state.blocks.find(b => b.id === id);
+      if (!block) return;
+      if (currentTab === 'write' && block.panel === 'original') return;
+      beginTextInput(svgEl, block, block.panel);
+      e.preventDefault(); e.stopPropagation();
+      return;
+    }
+    if (e.target.closest('.sel-overlay')) return;
     const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
-    beginTextInput(svgEl, pt.x, pt.y, null, panel === 'bottom' ? 'new' : 'original');
+    const { blockX, blockY } = svgToBlockCoords(pt.x, pt.y);
+    beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY);
     e.preventDefault();
   });
 
-  // Pointer down on block → select / start drag
+  // ── Pointer down: handle resize or block move or deselect
   svgEl.addEventListener('pointerdown', (e) => {
     if (panel === 'top') return;
+    hasDragged = false;
 
-    // Check if hitting a handle
     const handle = e.target.closest('[data-handle]');
     if (handle && selectedId !== null) {
       const block = state.blocks.find(b => b.id === selectedId);
@@ -1504,83 +1543,70 @@ function setupSvgInteraction(svgEl, panel) {
         type: handle.dataset.handle === 'left' ? 'left-handle' : 'right-handle',
         blockId: selectedId,
         startX: pt.x, startY: pt.y,
-        origX: block.x, origY: block.y,
-        origW: block.width,
+        origX: block.x, origY: block.y, origW: block.width,
         svgEl
       };
       svgEl.setPointerCapture(e.pointerId);
-      e.stopPropagation();
-      return;
+      e.stopPropagation(); return;
     }
 
-    // Hit a block?
     const blockGroup = e.target.closest('.block-group');
     if (blockGroup) {
       const id = parseInt(blockGroup.dataset.id);
-      // Check block belongs to this panel context
       const block = state.blocks.find(b => b.id === id);
       if (!block) return;
-      if (currentTab === 'write' && block.panel === 'original') return; // read-only in write tab
+      if (currentTab === 'write' && block.panel === 'original') return;
       selectBlock(id);
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
       dragState = {
-        type: 'move',
-        blockId: id,
+        type: 'move', blockId: id,
         startX: pt.x, startY: pt.y,
-        origX: block.x, origY: block.y,
-        origW: block.width,
+        origX: block.x, origY: block.y, origW: block.width,
         svgEl
       };
       svgEl.setPointerCapture(e.pointerId);
-      e.stopPropagation();
-      return;
+      e.stopPropagation(); return;
     }
 
-    // Click on empty space → deselect
-    if (!e.target.closest('.sel-overlay')) {
-      deselectAll();
-    }
+    if (!e.target.closest('.sel-overlay')) deselectAll();
   });
 
   svgEl.addEventListener('pointermove', (e) => {
     if (!dragState || dragState.svgEl !== svgEl) return;
-    const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
-    const dx = pt.x - dragState.startX;
-    const dy = pt.y - dragState.startY;
+    const pt  = getSvgPoint(svgEl, e.clientX, e.clientY);
+    const dxPx = pt.x - dragState.startX;
+    const dyPx = pt.y - dragState.startY;
+    if (Math.abs(dxPx) > 2 || Math.abs(dyPx) > 2) hasDragged = true;
+
     const block = state.blocks.find(b => b.id === dragState.blockId);
     if (!block) return;
+    const scale  = getMeasureScale();
+    const mpr    = getMeasuresPerRow();
+    const rowW   = mpr * CANONICAL_MW;
+    const curRow = Math.floor(dragState.origX / rowW);
+
+    const MIN_W = 20 / scale; // min block width in canonical units
 
     if (dragState.type === 'move') {
-      block.x = dragState.origX + dx;
-      block.y = dragState.origY + dy;
+      // Clamp x within current row, y within current row height
+      const minX = curRow * rowW;
+      const maxX = (curRow + 1) * rowW - (block.width || MIN_W);
+      block.x = Math.max(minX, Math.min(maxX, dragState.origX + dxPx / scale));
+      block.y = Math.max(CANVAS_PAD_TOP, Math.min(ROW_HEIGHT - CANVAS_PAD_BOT - (block.fontSize || 32),
+                  dragState.origY + dyPx));
     } else if (dragState.type === 'right-handle') {
-      block.width = Math.max(40, dragState.origW + dx);
+      block.width = Math.max(MIN_W, dragState.origW + dxPx / scale);
     } else if (dragState.type === 'left-handle') {
-      const newW = Math.max(40, dragState.origW - dx);
-      block.x = dragState.origX + (dragState.origW - newW);
+      const newW = Math.max(MIN_W, dragState.origW - dxPx / scale);
+      block.x    = dragState.origX + (dragState.origW - newW);
       block.width = newW;
     }
     renderBlocks();
     positionSelToolbar();
   });
 
-  svgEl.addEventListener('pointerup', (e) => {
-    if (dragState && dragState.svgEl === svgEl) {
-      dragState = null;
-    }
-  });
-
-  // Double-click on existing block → edit
-  svgEl.addEventListener('dblclick', (e) => {
-    const blockGroup = e.target.closest('.block-group');
-    if (!blockGroup) return;
-    const id = parseInt(blockGroup.dataset.id);
-    const block = state.blocks.find(b => b.id === id);
-    if (!block) return;
-    if (currentTab === 'write' && block.panel === 'original') return;
-    beginTextInput(svgEl, block.x, block.y, block, block.panel);
-    e.preventDefault();
-    e.stopPropagation();
+  svgEl.addEventListener('pointerup', () => {
+    if (dragState) dragState = null;
   });
 }
 
@@ -1598,141 +1624,181 @@ let editingSvg = null;
 let inputOriginX = 0;
 let inputOriginY = 0;
 
-let isComposing = false;          // IME composition state (Korean/Japanese)
-let cancelNextCommit = false;     // Esc 누르면 commit 건너뛰기
+let isComposing = false;
+let cancelNextCommit = false;
 
 function autoResizeInput() {
   const chars = Array.from(textInputEl.value).length || 1;
-  const fs = parseInt(textInputEl.style.fontSize) || 28;
-  // 한글/일문은 폭이 크므로 0.9 계수 사용
-  textInputEl.style.width = Math.max(100, chars * fs * 0.9 + 20) + 'px';
+  const fs    = parseInt(textInputEl.style.fontSize) || 32;
+  textInputEl.style.width = Math.max(120, chars * fs * 0.95 + 24) + 'px';
 }
 
-function beginTextInput(svgEl, svgX, svgY, existingBlock, panel) {
-  editingBlock = existingBlock || null;
-  editingPanel = panel;
-  editingSvg = svgEl;
+/*
+ * beginTextInput has two call signatures:
+ *   1. Editing an existing block:   beginTextInput(svgEl, block, panel)
+ *   2. Creating at canvas coords:   beginTextInput(svgEl, null, panel, blockX, blockY)
+ */
+function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
+  editingBlock  = blockOrNull || null;
+  editingPanel  = panel;
+  editingSvg    = svgEl;
   cancelNextCommit = false;
 
   const svgRect = svgEl.getBoundingClientRect();
-  const fs = existingBlock ? existingBlock.fontSize : 32;
-  const font = getCanvasFont();
+  const font    = getCanvasFont();
+  let   screenX, screenY, fs;
 
-  inputOriginX = svgX;
-  inputOriginY = svgY;
-
-  const screenX = svgRect.left + svgX;
-  const screenY = svgRect.top + svgY - fs;
-
-  textInputEl.style.fontFamily = `'${font}', sans-serif`;
-  textInputEl.style.fontSize = fs + 'px';
-  textInputEl.style.color = existingBlock ? existingBlock.color : '#2A2D3F';
-  textInputEl.style.left = screenX + 'px';
-  textInputEl.style.top = screenY + 'px';
-  textInputEl.value = existingBlock ? existingBlock.text : '';
-  textInputEl.style.width = Math.max(120, (existingBlock ? existingBlock.width : 140)) + 'px';
-
-  // Position hint tooltip below input
-  const hint = document.getElementById('text-input-hint');
-  if (hint) {
-    hint.style.left = screenX + 'px';
-    hint.style.top = (screenY + fs + 22) + 'px';
+  if (editingBlock) {
+    fs = editingBlock.fontSize || 32;
+    const { svgX, svgY, renderWidth: rw } = getBlockRenderPos(editingBlock);
+    screenX = svgRect.left + svgX;
+    screenY = svgRect.top  + svgY - fs;
+    inputOriginX = editingBlock.x;
+    inputOriginY = editingBlock.y;
+    textInputEl.style.width = Math.max(120, rw) + 'px';
+    textInputEl.value = editingBlock.text || '';
+  } else {
+    fs = 32;
+    inputOriginX = newBlockX;
+    inputOriginY = newBlockY;
+    const scale  = getMeasureScale();
+    const mpr    = getMeasuresPerRow();
+    const rowW   = mpr * CANONICAL_MW;
+    const row    = Math.floor(newBlockX / rowW);
+    const localX = (newBlockX - row * rowW) * scale;
+    screenX = svgRect.left + localX;
+    screenY = svgRect.top  + row * ROW_HEIGHT + newBlockY - fs;
+    textInputEl.value = '';
+    textInputEl.style.width = '120px';
   }
 
+  textInputEl.style.fontFamily = `'${font}', 'Pretendard GOV', sans-serif`;
+  textInputEl.style.fontSize   = fs + 'px';
+  textInputEl.style.color      = editingBlock ? (editingBlock.color || '#2A2D3F') : '#2A2D3F';
+  textInputEl.style.left = screenX + 'px';
+  textInputEl.style.top  = screenY + 'px';
+
+  const hint = document.getElementById('text-input-hint');
+  if (hint) { hint.style.left = screenX + 'px'; hint.style.top = (screenY + fs + 22) + 'px'; }
+
   textOverlay.classList.add('active');
-  // requestAnimationFrame으로 포커스 — 모바일/일부 브라우저에서 안정적
-  requestAnimationFrame(() => {
-    textInputEl.focus();
-    textInputEl.select();
-    autoResizeInput();
-  });
+  requestAnimationFrame(() => { textInputEl.focus(); if (editingBlock) textInputEl.select(); autoResizeInput(); });
 }
 
+// Returns canonical units
 function estimateWordWidth(word, fs) {
-  const charCount = Array.from(word).length;
-  // Roughly: CJK ≈ 1.0×fs, Latin ≈ 0.55×fs. Use 0.85 as middle-ground.
-  return Math.max(50, charCount * fs * 0.85);
+  const n = Array.from(word).length;
+  return Math.max(30 / getMeasureScale(), n * fs * 0.85 / getMeasureScale());
 }
 
-function commitTextInput() {
-  if (!textOverlay.classList.contains('active')) return;
-  if (cancelNextCommit) { cancelNextCommit = false; textOverlay.classList.remove('active'); textInputEl.value = ''; return; }
-  if (isComposing) return; // IME 조합 중에는 commit 미루기
+// Compute canonical x for next block after the given one
+function nextBlockX(block) {
+  const mpr  = getMeasuresPerRow();
+  const rowW = mpr * CANONICAL_MW;
+  const curRow = Math.floor(block.x / rowW);
+  const candidate = block.x + block.width + 20 / getMeasureScale();
+  // Stay in same row; if overflow, add to state.measures and continue
+  const rowEnd = (curRow + 1) * rowW;
+  if (candidate >= rowEnd) {
+    // Need another measure - auto-add if we're at the end
+    if (Math.ceil(candidate / CANONICAL_MW) > state.measures) {
+      setMeasures(Math.ceil(candidate / CANONICAL_MW));
+    }
+  }
+  return candidate;
+}
+
+let lastCommittedBlock = null; // used by Tab continuation
+
+function commitTextInput(andThenContinue = false) {
+  if (!textOverlay.classList.contains('active')) return null;
+  if (cancelNextCommit) {
+    cancelNextCommit = false;
+    textOverlay.classList.remove('active');
+    textInputEl.value = '';
+    return null;
+  }
+  if (isComposing) return null;
 
   const val = textInputEl.value.trim();
-  const fs = parseInt(textInputEl.style.fontSize) || 32;
-  const maxX = getCanvasWidth();
+  const fs  = parseInt(textInputEl.style.fontSize) || 32;
+  let lastBlock = null;
 
   if (editingBlock) {
     if (val === '') {
       state.blocks = state.blocks.filter(b => b.id !== editingBlock.id);
       if (selectedId === editingBlock.id) deselectAll();
     } else {
-      // For an existing block, treat the first whitespace-separated word as that
-      // block's new text, and create additional blocks for any extra words.
       const words = val.split(/\s+/).filter(w => w.length > 0);
-      editingBlock.text = words[0];
+      editingBlock.text  = words[0];
       editingBlock.width = estimateWordWidth(words[0], editingBlock.fontSize || fs);
-      let curX = editingBlock.x + editingBlock.width + 18;
+      lastBlock = editingBlock;
+      let curX = nextBlockX(editingBlock);
       for (let i = 1; i < words.length; i++) {
         const w = estimateWordWidth(words[i], editingBlock.fontSize || fs);
-        if (curX + w > maxX - 8) curX = Math.max(20, maxX - w - 8);
-        state.blocks.push({
-          id: nextId++,
-          text: words[i],
-          x: curX,
-          y: editingBlock.y,
-          width: w,
-          fontSize: editingBlock.fontSize || fs,
-          slide: false,
-          color: editingBlock.color || '#2A2D3F',
-          panel: editingBlock.panel
-        });
-        curX += w + 18;
+        const nb = { id: nextId++, text: words[i], x: curX, y: editingBlock.y,
+          width: w, fontSize: editingBlock.fontSize || fs, slide: false,
+          color: editingBlock.color || '#2A2D3F', panel: editingBlock.panel };
+        state.blocks.push(nb);
+        lastBlock = nb;
+        curX = nextBlockX(nb);
       }
     }
   } else if (val !== '') {
-    // New input — split by whitespace into separate blocks
     const words = val.split(/\s+/).filter(w => w.length > 0);
     let curX = inputOriginX;
     let firstId = null;
-    words.forEach((word) => {
+    words.forEach(word => {
       const w = estimateWordWidth(word, fs);
-      if (curX + w > maxX - 8) curX = Math.max(20, maxX - w - 8);
-      const block = {
-        id: nextId++,
-        text: word,
-        x: curX,
-        y: inputOriginY,
-        width: w,
-        fontSize: fs,
-        slide: false,
-        color: '#2A2D3F',
-        panel: editingPanel
-      };
-      state.blocks.push(block);
-      if (firstId === null) firstId = block.id;
-      curX += w + 18;
+      const nb = { id: nextId++, text: word, x: curX, y: inputOriginY,
+        width: w, fontSize: fs, slide: false, color: '#2A2D3F', panel: editingPanel };
+      state.blocks.push(nb);
+      if (firstId === null) firstId = nb.id;
+      lastBlock = nb;
+      curX = nextBlockX(nb);
     });
-    if (firstId !== null) selectBlock(firstId);
+    if (firstId !== null && !andThenContinue) selectBlock(firstId);
   }
+
   textOverlay.classList.remove('active');
   textInputEl.value = '';
+  lastCommittedBlock = lastBlock;
+  const savedSvg    = editingSvg;
+  const savedPanel  = editingPanel;
   editingBlock = null;
   renderBlocks();
+  updateEmptyHint();
+
+  // Tab continuation: immediately open next input
+  if (andThenContinue && lastBlock && savedSvg) {
+    const nx = nextBlockX(lastBlock);
+    updateCanvasSize();
+    renderAllGuideLines();
+    requestAnimationFrame(() => {
+      beginTextInput(savedSvg, null, savedPanel, nx, lastBlock.y);
+    });
+  }
+  return lastBlock;
 }
 
-// IME 조합 시작/종료 추적 — 한글/일본어 입력 시 Enter 오작동 방지
+// Show/hide the "double-click to start" hint based on block count
+function updateEmptyHint() {
+  const hint = document.getElementById('learn-empty-hint');
+  if (hint) hint.style.display = state.blocks.filter(b => b.panel === 'original').length === 0 ? '' : 'none';
+}
+
 textInputEl.addEventListener('compositionstart', () => { isComposing = true; });
-textInputEl.addEventListener('compositionend', () => {
-  isComposing = false;
-  autoResizeInput();
-});
+textInputEl.addEventListener('compositionend',   () => { isComposing = false; autoResizeInput(); });
 
 textInputEl.addEventListener('keydown', (e) => {
-  // Enter: 조합 중이 아닐 때만 확정 (e.isComposing 또는 keyCode 229 체크)
   if (e.key === 'Enter' && !isComposing && !e.isComposing && e.keyCode !== 229) {
     commitTextInput();
+    e.preventDefault();
+    return;
+  }
+  if (e.key === 'Tab' && !isComposing && !e.isComposing) {
+    // Commit current and immediately open next input after the block
+    commitTextInput(true /* andThenContinue */);
     e.preventDefault();
     return;
   }
@@ -1748,12 +1814,8 @@ textInputEl.addEventListener('keydown', (e) => {
 
 textInputEl.addEventListener('input', autoResizeInput);
 
-// blur 시 commit — 단, IME 조합 중이면 기다림, 충분한 시간을 주어 오작동 방지
 textInputEl.addEventListener('blur', () => {
-  setTimeout(() => {
-    if (isComposing) return;
-    commitTextInput();
-  }, 200);
+  setTimeout(() => { if (!isComposing) commitTextInput(); }, 220);
 });
 
 /* ══════════════════════════════════════════════════════
@@ -1874,11 +1936,11 @@ function setMeasures(n) {
   const next = Math.max(MIN_MEASURES, Math.min(MAX_MEASURES, n));
   if (next === state.measures) return;
   state.measures = next;
-  // Trim any blocks now outside the canvas
-  const maxX = getCanvasWidth();
+  // Trim blocks outside the new canonical canvas width
+  const maxCanonX = next * CANONICAL_MW;
   state.blocks.forEach(b => {
-    if (b.x + (b.width || 0) > maxX - 4) {
-      b.x = Math.max(8, maxX - (b.width || 60) - 8);
+    if (b.x + (b.width || 0) > maxCanonX - 4) {
+      b.x = Math.max(8, maxCanonX - (b.width || 60) - 8);
     }
   });
   updateCanvasSize();
@@ -1889,9 +1951,9 @@ function setMeasures(n) {
 
 measurePlusBtn.addEventListener('click', () => {
   setMeasures(state.measures + 1);
-  // Auto-scroll the active canvas to the new measure
+  // Scroll down to reveal the newly added row
   const wrapper = (currentTab === 'learn' ? learnSvg : writeSvgBot).parentElement;
-  if (wrapper) wrapper.scrollTo({ left: wrapper.scrollWidth, behavior: 'smooth' });
+  if (wrapper) wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: 'smooth' });
 });
 measureMinusBtn.addEventListener('click', () => setMeasures(state.measures - 1));
 
@@ -2010,6 +2072,7 @@ function applyLoadedState(loaded) {
   renderAllGuideLines();
   renderBlocks();
   updateMeasureUI();
+  updateEmptyHint();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2106,19 +2169,20 @@ function loadExample() {
   state.songTitle = '반짝반짝 작은 별';
   state.spaceMode = 'guide';
   state.lineCount = 3;
-  state.measures = 4;
+  state.measures  = 8;
   nextId = 1;
   const C = { ink: '#2A2D3F', blue: '#5B8DEF', mint: '#7DD3B8', peach: '#FFB088', rose: '#F4A6B7' };
-  // y values mapped to the new CANVAS_HEIGHT (360). 3 guide lines at ~110/192/274.
+  const M = CANONICAL_MW; // 200
+  // y positions within each row: lower number = higher pitch (y=0 is top)
   state.blocks = [
-    { id: nextId++, text: '반짝', x: 30,  y: 240, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '반짝', x: 160, y: 200, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '작은', x: 300, y: 160, width: 110, fontSize: 36, slide: false, color: C.blue,  panel: 'original' },
-    { id: nextId++, text: '별',   x: 430, y: 130, width: 70,  fontSize: 40, slide: false, color: C.peach, panel: 'original' },
-    { id: nextId++, text: '아름', x: 540, y: 160, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '답게', x: 670, y: 200, width: 110, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '비치', x: 800, y: 200, width: 110, fontSize: 36, slide: false, color: C.mint,  panel: 'original' },
-    { id: nextId++, text: '네',   x: 930, y: 240, width: 170, fontSize: 36, slide: true,  color: C.rose,  panel: 'original' },
+    { id: nextId++, text: '반짝', x: M*0+15, y: 220, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '반짝', x: M*1+15, y: 190, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '작은', x: M*2+15, y: 155, width: 140, fontSize: 36, slide: false, color: C.blue,  panel: 'original' },
+    { id: nextId++, text: '별',   x: M*3+30, y: 115, width: 110, fontSize: 40, slide: false, color: C.peach, panel: 'original' },
+    { id: nextId++, text: '아름', x: M*4+15, y: 100, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '답게', x: M*5+15, y: 115, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '비치', x: M*6+15, y: 155, width: 155, fontSize: 36, slide: false, color: C.mint,  panel: 'original' },
+    { id: nextId++, text: '네',   x: M*7+15, y: 220, width: 230, fontSize: 36, slide: true,  color: C.rose,  panel: 'original' },
   ];
   document.getElementById('song-title').value = state.songTitle;
   document.getElementById('mode-guide').classList.add('active');
@@ -2126,11 +2190,12 @@ function loadExample() {
   document.getElementById('line-count-group').style.display = 'flex';
   lineCountSlider.value = state.lineCount;
   lineCountVal.textContent = state.lineCount;
+  deselectAll();
   updateCanvasSize();
   renderAllGuideLines();
-  deselectAll();
   renderBlocks();
   updateMeasureUI();
+  updateEmptyHint();
 }
 
 document.getElementById('btn-example').addEventListener('click', () => {
@@ -2159,12 +2224,36 @@ function showToast(msg) {
 ══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
   if (e.target === textInputEl) return;
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    state.blocks = state.blocks.filter(b => b.id !== selectedId);
-    deselectAll();
-    renderBlocks();
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+  if (selectedId !== null) {
+    const block = state.blocks.find(b => b.id === selectedId);
+    if (block) {
+      // Delete/Backspace → remove block
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        state.blocks = state.blocks.filter(b => b.id !== selectedId);
+        deselectAll(); renderBlocks(); updateEmptyHint();
+        e.preventDefault(); return;
+      }
+      // F2 or Enter → open edit mode
+      if (e.key === 'F2' || (e.key === 'Enter' && !textOverlay.classList.contains('active'))) {
+        beginTextInput(getActiveSvg(), block, block.panel);
+        e.preventDefault(); return;
+      }
+      // Any printable char → start editing and prepend char
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        beginTextInput(getActiveSvg(), block, block.panel);
+        // Replace existing text with the typed char
+        requestAnimationFrame(() => {
+          textInputEl.value = e.key;
+          textInputEl.setSelectionRange(1, 1);
+          autoResizeInput();
+        });
+        e.preventDefault(); return;
+      }
+    }
   }
+
   if (e.key === 'Escape') {
     deselectAll();
     textOverlay.classList.remove('active');
@@ -2181,12 +2270,21 @@ function init() {
   loadFromHash();
   renderAllGuideLines();
   renderBlocks();
+  updateEmptyHint();
   // Start with an empty canvas — users open the Help modal and click
   // "예시 보기" to see the sample score.
 }
 
-// Handle window resize for toolbar position
+// Re-render when the viewport width crosses the MPR breakpoint (PC↔tablet)
+let _lastMpr = getMeasuresPerRow();
 window.addEventListener('resize', () => {
+  const mpr = getMeasuresPerRow();
+  if (mpr !== _lastMpr) {
+    _lastMpr = mpr;
+    updateCanvasSize();
+    renderAllGuideLines();
+    renderBlocks();
+  }
   if (selectedId !== null) positionSelToolbar();
 });
 
