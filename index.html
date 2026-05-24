@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>너를 위한 악보 · Easy Score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Zen+Maru+Gothic:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded" rel="stylesheet">
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+:root {
+  --cream: #FBF5E9;
+  --cream-deep: #F4EAD4;
+  --paper: #FEFBF3;
+  --sky: #C8DCEA;
+  --sky-deep: #9FBED4;
+  --rose: #F2C7C7;
+  --sand: #E8D4A2;
+  --gold: #D4A574;
+  --ink: #3D3A4E;
+  --ink-soft: #6B6680;
+  --line: rgba(61,58,78,0.12);
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(61,58,78,0.10);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-rounded {
+  font-variation-settings: 'FILL' 1;
+  font-size: 20px;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* ── Background Decorations ── */
+.bg-stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.bg-star {
+  position: absolute;
+  color: var(--gold);
+  opacity: 0.25;
+  animation: twinkle 3s ease-in-out infinite;
+}
+.bg-star:nth-child(1) { top: 8%; left: 6%; animation-delay: 0s; font-size: 18px; opacity: 0.22; }
+.bg-star:nth-child(2) { top: 18%; left: 88%; animation-delay: 0.8s; font-size: 14px; opacity: 0.30; }
+.bg-star:nth-child(3) { top: 60%; left: 3%; animation-delay: 1.4s; font-size: 22px; opacity: 0.20; }
+.bg-star:nth-child(4) { top: 78%; left: 92%; animation-delay: 0.3s; font-size: 16px; opacity: 0.35; }
+.bg-star:nth-child(5) { top: 40%; left: 96%; animation-delay: 1.8s; font-size: 12px; opacity: 0.28; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.2); }
+}
+
+.bg-planet {
+  position: fixed;
+  bottom: -80px;
+  right: -80px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--sky), var(--sky-deep), var(--gold));
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── App Layout ── */
+#app {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 52px;
+  background: var(--cream-deep);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+.logo-icon { font-size: 22px; color: var(--gold); }
+.logo-sub { font-size: 11px; font-weight: 400; color: var(--ink-soft); margin-top: 1px; }
+
+.header-spacer { flex: 1; }
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.icon-btn:hover { background: var(--line); color: var(--ink); }
+.icon-btn.active { background: var(--gold); color: #fff; }
+
+/* ── Dropdown ── */
+.dropdown-wrap { position: relative; }
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 180px;
+  z-index: 200;
+  overflow: hidden;
+}
+.dropdown-menu.open { display: block; }
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink);
+  transition: background 0.12s;
+}
+.dropdown-item:hover { background: var(--cream); }
+.dropdown-item .material-symbols-rounded { font-size: 18px; color: var(--ink-soft); }
+
+/* Language selector */
+#lang-select {
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ── Tabs ── */
+.tabs-bar {
+  display: flex;
+  padding: 8px 16px 0;
+  gap: 4px;
+  background: var(--cream);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.tab-btn .material-symbols-rounded { font-size: 18px; }
+.tab-btn:hover { color: var(--ink); background: var(--cream-deep); }
+.tab-btn.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+  background: var(--paper);
+}
+
+/* ── Control Bar ── */
+.control-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctrl-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.toggle-group {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.toggle-btn .material-symbols-rounded { font-size: 16px; }
+.toggle-btn.active { background: var(--gold); color: #fff; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sand);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+}
+
+.title-input {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  min-width: 160px;
+  max-width: 260px;
+  transition: border-color 0.15s;
+}
+.title-input:focus { border-color: var(--gold); }
+
+/* ── Canvas Area ── */
+#canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-wrapper {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.canvas-wrapper.write-top {
+  flex: 0 0 48%;
+  border-bottom: 2px dashed var(--sand);
+}
+.canvas-wrapper.write-bottom {
+  flex: 1;
+}
+
+.write-panel-label {
+  position: absolute;
+  top: 6px;
+  left: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  z-index: 10;
+  text-transform: uppercase;
+}
+
+svg.score-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+  background: var(--paper);
+  user-select: none;
+}
+
+/* ── Text Input Overlay ── */
+#text-overlay {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  display: none;
+}
+#text-overlay.active {
+  display: block;
+  pointer-events: auto;
+}
+#text-input-el {
+  position: absolute;
+  border: 2px dashed var(--gold);
+  border-radius: 4px;
+  background: rgba(254,251,243,0.92);
+  padding: 2px 6px;
+  font-family: var(--canvas-font, 'Gaegu');
+  font-size: 28px;
+  color: var(--ink);
+  outline: none;
+  min-width: 80px;
+  min-height: 36px;
+  line-height: 1.2;
+  white-space: nowrap;
+  resize: none;
+  overflow: hidden;
+}
+
+/* ── Selection Toolbar (floating) ── */
+#sel-toolbar {
+  display: none;
+  position: fixed;
+  z-index: 150;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(61,58,78,0.15);
+  padding: 6px 10px;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+#sel-toolbar.active { display: flex; }
+
+.sel-ctrl-label {
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+input[type="color"] {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  padding: 2px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slide-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.slide-toggle-btn .material-symbols-rounded { font-size: 16px; }
+.slide-toggle-btn.on { background: var(--sky-deep); color: #fff; border-color: var(--sky-deep); }
+
+.del-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--rose);
+  background: transparent;
+  color: var(--rose);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.del-btn:hover { background: var(--rose); color: #fff; }
+
+/* ── Footer ── */
+footer {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream-deep);
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+footer a {
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+footer a:hover { color: var(--gold); }
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(61,58,78,0.35);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--paper);
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(61,58,78,0.18);
+  padding: 32px 36px;
+  max-width: 480px;
+  width: 90%;
+  position: relative;
+}
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-title .material-symbols-rounded { color: var(--gold); font-size: 24px; }
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--cream);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: var(--line); }
+.help-list { list-style: none; }
+.help-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.help-list li:last-child { border-bottom: none; }
+.help-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 400;
+  transition: all 0.25s;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Font size slider label ── */
+.fs-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 28px;
+  text-align: center;
+}
+
+/* Color swatches */
+.color-swatches {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.selected { border-color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- Background decoration -->
+<div class="bg-stars" aria-hidden="true">
+  <span class="bg-star material-symbols-rounded">auto_awesome</span>
+  <span class="bg-star material-symbols-rounded">star</span>
+  <span class="bg-star material-symbols-rounded">auto_awesome</span>
+  <span class="bg-star material-symbols-rounded">star</span>
+  <span class="bg-star material-symbols-rounded">auto_awesome</span>
+</div>
+<div class="bg-planet" aria-hidden="true"></div>
+
+<!-- App -->
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon material-symbols-rounded">music_note</span>
+      <div>
+        <div>너를 위한 악보</div>
+        <div class="logo-sub">Easy Score</div>
+      </div>
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <!-- Help -->
+    <button class="icon-btn" id="btn-help" title="도움말">
+      <span class="material-symbols-rounded">help</span>
+    </button>
+
+    <!-- Save dropdown -->
+    <div class="dropdown-wrap">
+      <button class="icon-btn" id="btn-save" title="저장">
+        <span class="material-symbols-rounded">save</span>
+      </button>
+      <div class="dropdown-menu" id="save-menu">
+        <div class="dropdown-item" id="menu-save-json">
+          <span class="material-symbols-rounded">download</span>
+          <span data-i18n="saveJson">JSON으로 저장</span>
+        </div>
+        <div class="dropdown-item" id="menu-load-json">
+          <span class="material-symbols-rounded">upload</span>
+          <span data-i18n="loadJson">JSON 불러오기</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export dropdown -->
+    <div class="dropdown-wrap">
+      <button class="icon-btn" id="btn-export" title="내보내기">
+        <span class="material-symbols-rounded">share</span>
+      </button>
+      <div class="dropdown-menu" id="export-menu">
+        <div class="dropdown-item" id="menu-copy-img">
+          <span class="material-symbols-rounded">content_copy</span>
+          <span data-i18n="copyImage">이미지 클립보드 복사</span>
+        </div>
+        <div class="dropdown-item" id="menu-dl-img">
+          <span class="material-symbols-rounded">image</span>
+          <span data-i18n="downloadImage">이미지 다운로드</span>
+        </div>
+        <div class="dropdown-item" id="menu-share-link">
+          <span class="material-symbols-rounded">link</span>
+          <span data-i18n="shareLink">공유 링크 복사</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <select id="lang-select" aria-label="Language">
+      <option value="ko">🇰🇷 KO</option>
+      <option value="en">🇺🇸 EN</option>
+      <option value="ja">🇯🇵 JA</option>
+    </select>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" id="tab-learn" data-tab="learn">
+      <span class="material-symbols-rounded">headphones</span>
+      <span data-i18n="tabLearn">노래 익히기</span>
+    </button>
+    <button class="tab-btn" id="tab-write" data-tab="write">
+      <span class="material-symbols-rounded">edit_note</span>
+      <span data-i18n="tabWrite">가사 쓰기</span>
+    </button>
+  </div>
+
+  <!-- Control Bar -->
+  <div class="control-bar">
+    <!-- Space mode -->
+    <div class="ctrl-group">
+      <span class="ctrl-label" data-i18n="spaceMode">공간</span>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="mode-guide" data-mode="guide">
+          <span class="material-symbols-rounded">horizontal_rule</span>
+          <span data-i18n="guide">가이드</span>
+        </button>
+        <button class="toggle-btn" id="mode-free" data-mode="free">
+          <span class="material-symbols-rounded">all_out</span>
+          <span data-i18n="free">프리</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Line count (visible in guide mode) -->
+    <div class="ctrl-group" id="line-count-group">
+      <span class="ctrl-label" data-i18n="lines">선</span>
+      <input type="range" id="line-count" min="1" max="5" value="3" step="1">
+      <span id="line-count-val">3</span>
+    </div>
+
+    <!-- Song title -->
+    <div class="ctrl-group" style="margin-left: auto;">
+      <input type="text" class="title-input" id="song-title" placeholder="노래 제목" data-i18n-placeholder="songTitlePlaceholder">
+    </div>
+  </div>
+
+  <!-- Canvas Area -->
+  <div id="canvas-area">
+    <!-- LEARN tab: single canvas -->
+    <div id="learn-canvas-wrap" class="canvas-wrapper">
+      <svg class="score-canvas" id="learn-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dots-learn" patternUnits="userSpaceOnUse" width="20" height="20">
+            <circle cx="10" cy="10" r="1" fill="rgba(61,58,78,0.08)"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#dots-learn)" id="learn-bg-dots"/>
+        <g id="guide-lines-learn"></g>
+        <g id="blocks-learn"></g>
+      </svg>
+    </div>
+
+    <!-- WRITE tab: two panels -->
+    <div id="write-canvas-wrap" style="display:none; flex: 1; flex-direction: column; overflow: hidden; display: none;">
+      <!-- Top: original (read-only) -->
+      <div class="canvas-wrapper write-top" id="write-top-wrap">
+        <div class="write-panel-label" data-i18n="originalScore">원곡 악보</div>
+        <svg class="score-canvas" id="write-svg-top" xmlns="http://www.w3.org/2000/svg" style="opacity:0.45; cursor: default;">
+          <g id="guide-lines-write-top"></g>
+          <g id="blocks-write-top"></g>
+        </svg>
+      </div>
+      <!-- Bottom: new lyrics -->
+      <div class="canvas-wrapper write-bottom" id="write-bottom-wrap">
+        <div class="write-panel-label" data-i18n="newLyrics">새 가사</div>
+        <svg class="score-canvas" id="write-svg-bottom" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="dots-write" patternUnits="userSpaceOnUse" width="20" height="20">
+              <circle cx="10" cy="10" r="1" fill="rgba(61,58,78,0.08)"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#dots-write)" id="write-bg-dots"/>
+          <g id="guide-lines-write-bottom"></g>
+          <g id="blocks-write-bottom"></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <a href="https://litt.ly/chichiboo" target="_blank" rel="noopener">Created by. 교육뮤지컬 꿈꾸는 치수쌤</a>
+  </footer>
+</div>
+
+<!-- Text input overlay -->
+<div id="text-overlay">
+  <input type="text" id="text-input-el" autocomplete="off" spellcheck="false">
+</div>
+
+<!-- Selection toolbar -->
+<div id="sel-toolbar">
+  <span class="sel-ctrl-label" data-i18n="fontSize">크기</span>
+  <input type="range" id="sel-font-size" min="14" max="80" value="28" style="width:70px;">
+  <span class="fs-label" id="sel-fs-val">28</span>
+
+  <span class="sel-ctrl-label" data-i18n="color">색</span>
+  <div class="color-swatches" id="color-swatches">
+    <div class="color-swatch selected" data-color="#3D3A4E" style="background:#3D3A4E;"></div>
+    <div class="color-swatch" data-color="#D4A574" style="background:#D4A574;"></div>
+    <div class="color-swatch" data-color="#9FBED4" style="background:#9FBED4;"></div>
+    <div class="color-swatch" data-color="#F2C7C7" style="background:#F2C7C7;"></div>
+    <div class="color-swatch" data-color="#6B6680" style="background:#6B6680;"></div>
+    <div class="color-swatch" data-color="#E76F51" style="background:#E76F51;"></div>
+    <input type="color" id="sel-color" value="#3D3A4E" title="커스텀 색상">
+  </div>
+
+  <button class="slide-toggle-btn" id="sel-slide-toggle">
+    <span class="material-symbols-rounded">trending_down</span>
+    <span data-i18n="slide">슬라이드</span>
+  </button>
+
+  <button class="del-btn" id="sel-del-btn" title="삭제">
+    <span class="material-symbols-rounded" style="font-size:16px;">delete</span>
+  </button>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal-box">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-title">
+      <span class="material-symbols-rounded">help</span>
+      <span data-i18n="helpTitle">사용 방법</span>
+    </div>
+    <ul class="help-list" id="help-list">
+      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 더블클릭하면 그 자리에 글자를 입력할 수 있어요.</div></li>
+      <li><div class="help-num">2</div><div data-i18n="help2">글자 블록을 위아래로 드래그하면 음의 높낮이를 표현할 수 있어요.</div></li>
+      <li><div class="help-num">3</div><div data-i18n="help3">양옆 핸들을 드래그하면 블록의 가로 길이를 조절해 길게 부르는 음을 표현해요.</div></li>
+      <li><div class="help-num">4</div><div data-i18n="help4">상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.</div></li>
+      <li><div class="help-num">5</div><div data-i18n="help5">저장 아이콘으로 JSON 파일에 저장하고, 공유 링크로 다른 기기에서도 열 수 있어요.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Hidden file input for JSON load -->
+<input type="file" id="file-input" accept=".json" style="display:none;">
+
+<!-- html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   i18n
+══════════════════════════════════════════════════════ */
+const TRANSLATIONS = {
+  ko: {
+    tabLearn: '노래 익히기', tabWrite: '가사 쓰기',
+    spaceMode: '공간', guide: '가이드', free: '프리', lines: '선',
+    songTitlePlaceholder: '노래 제목',
+    saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
+    copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
+    helpTitle: '사용 방법',
+    help1: '빈 캔버스를 더블클릭하면 그 자리에 글자를 입력할 수 있어요.',
+    help2: '글자 블록을 위아래로 드래그하면 음의 높낮이를 표현할 수 있어요.',
+    help3: '양옆 핸들을 드래그하면 블록의 가로 길이를 조절해 길게 부르는 음을 표현해요.',
+    help4: '상단 슬라이드 버튼을 켜면 미끄러지는 음(글라이드)을 곡선으로 표현해요.',
+    help5: 'JSON 저장 또는 공유 링크로 다른 기기에서도 작업을 불러올 수 있어요.',
+    originalScore: '원곡 악보', newLyrics: '새 가사',
+    fontSize: '크기', color: '색', slide: '슬라이드',
+    toastCopied: '클립보드에 복사됐어요!', toastSaved: '저장됐어요!', toastLoaded: '불러왔어요!',
+    toastLinkCopied: '링크가 복사됐어요!', toastImgCopied: '이미지가 복사됐어요!'
+  },
+  en: {
+    tabLearn: 'Learn', tabWrite: 'Write',
+    spaceMode: 'Space', guide: 'Guide', free: 'Free', lines: 'Lines',
+    songTitlePlaceholder: 'Song title',
+    saveJson: 'Save as JSON', loadJson: 'Load JSON',
+    copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
+    helpTitle: 'How to use',
+    help1: 'Double-click the canvas to type at that position.',
+    help2: 'Drag a text block up or down to show melody pitch.',
+    help3: 'Drag the side handles to stretch a block — shows held notes.',
+    help4: 'Toggle the slide button to show a gliding note on a curve.',
+    help5: 'Save as JSON or copy the share link to restore your work anywhere.',
+    originalScore: 'Original', newLyrics: 'New lyrics',
+    fontSize: 'Size', color: 'Color', slide: 'Slide',
+    toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
+    toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!'
+  },
+  ja: {
+    tabLearn: '歌を学ぶ', tabWrite: '歌詞を書く',
+    spaceMode: '空間', guide: 'ガイド', free: 'フリー', lines: '線',
+    songTitlePlaceholder: '曲のタイトル',
+    saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
+    copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
+    helpTitle: '使い方',
+    help1: 'キャンバスをダブルクリックすると、その場所に文字を入力できます。',
+    help2: 'テキストブロックを上下にドラッグして音の高さを表現できます。',
+    help3: '左右のハンドルをドラッグして、ブロックの幅を調整し、伸ばす音を表現できます。',
+    help4: 'スライドボタンをオンにすると、なめらかな音を曲線で表現できます。',
+    help5: 'JSON保存または共有リンクで他のデバイスでも作業を復元できます。',
+    originalScore: '原曲', newLyrics: '新しい歌詞',
+    fontSize: 'サイズ', color: '色', slide: 'スライド',
+    toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
+    toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！'
+  }
+};
+const CANVAS_FONTS = { ko: 'Gaegu', en: 'Fraunces', ja: 'Zen Maru Gothic' };
+
+let lang = 'ko';
+function t(key) { return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.documentElement.lang = lang;
+  document.getElementById('text-input-el').style.fontFamily = `'${CANVAS_FONTS[lang]}', sans-serif`;
+}
+
+/* ══════════════════════════════════════════════════════
+   App State
+══════════════════════════════════════════════════════ */
+let state = {
+  version: 1,
+  songTitle: '',
+  lang: 'ko',
+  spaceMode: 'guide',
+  lineCount: 3,
+  blocks: []            // all blocks, panel: 'original' | 'new'
+};
+let nextId = 1;
+let currentTab = 'learn';
+let selectedId = null;
+
+/* ══════════════════════════════════════════════════════
+   SVG Element Refs
+══════════════════════════════════════════════════════ */
+const learnSvg         = document.getElementById('learn-svg');
+const blocksLearnG     = document.getElementById('blocks-learn');
+const guideLinesLearn  = document.getElementById('guide-lines-learn');
+
+const writeSvgTop      = document.getElementById('write-svg-top');
+const blocksWriteTopG  = document.getElementById('blocks-write-top');
+const guideLinesWriteTop = document.getElementById('guide-lines-write-top');
+
+const writeSvgBot      = document.getElementById('write-svg-bottom');
+const blocksWriteBotG  = document.getElementById('blocks-write-bottom');
+const guideLinesWriteBot = document.getElementById('guide-lines-write-bottom');
+
+/* ══════════════════════════════════════════════════════
+   Guide Lines
+══════════════════════════════════════════════════════ */
+function renderGuideLines(g, svg, count, spaceMode) {
+  g.innerHTML = '';
+  if (spaceMode !== 'guide') return;
+  const h = svg.clientHeight || 400;
+  const w = svg.clientWidth || 800;
+  const step = h / (count + 1);
+  for (let i = 1; i <= count; i++) {
+    const y = step * i;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','0');
+    line.setAttribute('y1', y);
+    line.setAttribute('x2', w);
+    line.setAttribute('y2', y);
+    line.setAttribute('stroke','#3D3A4E');
+    line.setAttribute('stroke-width','1');
+    line.setAttribute('stroke-dasharray','6 6');
+    line.setAttribute('opacity','0.17');
+    line.setAttribute('pointer-events','none');
+    g.appendChild(line);
+  }
+}
+
+function renderAllGuideLines() {
+  renderGuideLines(guideLinesLearn, learnSvg, state.lineCount, state.spaceMode);
+  renderGuideLines(guideLinesWriteTop, writeSvgTop, state.lineCount, state.spaceMode);
+  renderGuideLines(guideLinesWriteBot, writeSvgBot, state.lineCount, state.spaceMode);
+}
+
+/* ══════════════════════════════════════════════════════
+   Block Rendering
+══════════════════════════════════════════════════════ */
+function getCanvasFont() { return CANVAS_FONTS[lang] || 'Gaegu'; }
+
+function createSlidePath(x, y, width) {
+  const cx1 = x + width * 0.3;
+  const cy1 = y + 30;
+  const cx2 = x + width * 0.7;
+  const cy2 = y + 50;
+  const ex = x + width;
+  const ey = y + 60;
+  return `M${x},${y} C${cx1},${cy1} ${cx2},${cy2} ${ex},${ey}`;
+}
+
+function makeSvgBlock(block) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('data-id', block.id);
+  g.setAttribute('class','block-group');
+  g.style.cursor = 'grab';
+
+  const font = getCanvasFont();
+  const fs = block.fontSize || 28;
+  const color = block.color || '#3D3A4E';
+  const w = block.width || 120;
+  const x = block.x;
+  const y = block.y;
+
+  if (block.slide) {
+    // Slide: textPath on a curve
+    const pathId = `slide-path-${block.id}`;
+    const d = createSlidePath(x, y, w);
+    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('id', pathId);
+    path.setAttribute('d', d);
+    path.setAttribute('fill','none');
+    defs.appendChild(path);
+    g.appendChild(defs);
+
+    // Visible curve (faint)
+    const visPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    visPath.setAttribute('d', d);
+    visPath.setAttribute('fill','none');
+    visPath.setAttribute('stroke', color);
+    visPath.setAttribute('stroke-width','1.5');
+    visPath.setAttribute('opacity','0.25');
+    visPath.setAttribute('pointer-events','none');
+    g.appendChild(visPath);
+
+    const textEl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    textEl.setAttribute('font-family', `'${font}', sans-serif`);
+    textEl.setAttribute('font-size', fs);
+    textEl.setAttribute('fill', color);
+    textEl.setAttribute('pointer-events','none');
+
+    const tp = document.createElementNS('http://www.w3.org/2000/svg','textPath');
+    tp.setAttribute('href', '#' + pathId);
+    tp.setAttribute('textLength', w);
+    tp.setAttribute('lengthAdjust','spacingAndGlyphs');
+    tp.textContent = block.text || '';
+    textEl.appendChild(tp);
+    g.appendChild(textEl);
+
+    // Bounding box for interaction (invisible)
+    const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bbox.setAttribute('x', x);
+    bbox.setAttribute('y', y - fs * 0.2);
+    bbox.setAttribute('width', w);
+    bbox.setAttribute('height', fs + 60);
+    bbox.setAttribute('fill','transparent');
+    bbox.setAttribute('class','block-hitbox');
+    g.appendChild(bbox);
+  } else {
+    // Normal: SVG text with textLength stretch
+    const textEl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    textEl.setAttribute('x', x);
+    textEl.setAttribute('y', y);
+    textEl.setAttribute('font-family', `'${font}', sans-serif`);
+    textEl.setAttribute('font-size', fs);
+    textEl.setAttribute('fill', color);
+    textEl.setAttribute('textLength', w);
+    textEl.setAttribute('lengthAdjust','spacingAndGlyphs');
+    textEl.setAttribute('pointer-events','none');
+    textEl.textContent = block.text || '';
+    g.appendChild(textEl);
+
+    // Hitbox
+    const hitH = fs * 1.3;
+    const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bbox.setAttribute('x', x);
+    bbox.setAttribute('y', y - fs);
+    bbox.setAttribute('width', w);
+    bbox.setAttribute('height', hitH);
+    bbox.setAttribute('fill','transparent');
+    bbox.setAttribute('class','block-hitbox');
+    g.appendChild(bbox);
+  }
+
+  return g;
+}
+
+function makeSelectionOverlay(block, svgEl) {
+  // Remove old
+  const old = svgEl.querySelector('.sel-overlay');
+  if (old) old.remove();
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class','sel-overlay');
+  g.setAttribute('pointer-events','all');
+
+  const fs = block.fontSize || 28;
+  const w = block.width || 120;
+  const x = block.x;
+  const y = block.slide ? block.y - fs * 0.2 : block.y - fs;
+  const h = block.slide ? fs + 60 : fs * 1.3;
+
+  // Selection rect
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('x', x - 2);
+  rect.setAttribute('y', y - 2);
+  rect.setAttribute('width', w + 4);
+  rect.setAttribute('height', h + 4);
+  rect.setAttribute('fill','none');
+  rect.setAttribute('stroke','#D4A574');
+  rect.setAttribute('stroke-width','2');
+  rect.setAttribute('stroke-dasharray','5 3');
+  rect.setAttribute('rx','4');
+  g.appendChild(rect);
+
+  // Left handle
+  const lh = makeHandle(x - 2, y + h / 2, 'left');
+  g.appendChild(lh);
+
+  // Right handle
+  const rh = makeHandle(x + w + 2, y + h / 2, 'right');
+  g.appendChild(rh);
+
+  svgEl.appendChild(g);
+  return g;
+}
+
+function makeHandle(cx, cy, side) {
+  const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx', cx);
+  c.setAttribute('cy', cy);
+  c.setAttribute('r','8');
+  c.setAttribute('fill','#D4A574');
+  c.setAttribute('stroke','#fff');
+  c.setAttribute('stroke-width','2');
+  c.setAttribute('cursor', side === 'left' ? 'ew-resize' : 'ew-resize');
+  c.setAttribute('data-handle', side);
+  return c;
+}
+
+/* ══════════════════════════════════════════════════════
+   Render blocks to SVGs
+══════════════════════════════════════════════════════ */
+function renderBlocks() {
+  blocksLearnG.innerHTML = '';
+  blocksWriteTopG.innerHTML = '';
+  blocksWriteBotG.innerHTML = '';
+
+  state.blocks.forEach(block => {
+    if (block.panel === 'original') {
+      // Learn tab and Write top
+      const gL = makeSvgBlock(block);
+      blocksLearnG.appendChild(gL);
+      const gWT = makeSvgBlock(block);
+      blocksWriteTopG.appendChild(gWT);
+    } else {
+      // New panel → Write bottom only
+      const gWB = makeSvgBlock(block);
+      blocksWriteBotG.appendChild(gWB);
+    }
+  });
+
+  // Re-draw selection if needed
+  if (selectedId !== null) {
+    const block = state.blocks.find(b => b.id === selectedId);
+    if (block) {
+      const svgEl = getActiveSvg();
+      if (svgEl) makeSelectionOverlay(block, svgEl);
+      updateSelToolbar(block);
+    }
+  }
+}
+
+function getActiveSvg() {
+  if (currentTab === 'learn') return learnSvg;
+  return writeSvgBot;
+}
+
+function getActivePanel() {
+  return currentTab === 'learn' ? 'original' : 'new';
+}
+
+/* ══════════════════════════════════════════════════════
+   Selection & Toolbar
+══════════════════════════════════════════════════════ */
+const selToolbar = document.getElementById('sel-toolbar');
+const selFontSize = document.getElementById('sel-font-size');
+const selFsVal = document.getElementById('sel-fs-val');
+const selColor = document.getElementById('sel-color');
+const selSlideToggle = document.getElementById('sel-slide-toggle');
+const selDelBtn = document.getElementById('sel-del-btn');
+
+function selectBlock(id) {
+  selectedId = id;
+  renderBlocks();
+  positionSelToolbar();
+}
+
+function deselectAll() {
+  selectedId = null;
+  // Remove selection overlays
+  document.querySelectorAll('.sel-overlay').forEach(el => el.remove());
+  selToolbar.classList.remove('active');
+}
+
+function updateSelToolbar(block) {
+  if (!block) { selToolbar.classList.remove('active'); return; }
+  selFontSize.value = block.fontSize || 28;
+  selFsVal.textContent = block.fontSize || 28;
+  selColor.value = block.color || '#3D3A4E';
+  // Color swatches
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.classList.toggle('selected', sw.dataset.color === (block.color || '#3D3A4E'));
+  });
+  selSlideToggle.classList.toggle('on', !!block.slide);
+  selToolbar.classList.add('active');
+}
+
+function positionSelToolbar() {
+  const block = state.blocks.find(b => b.id === selectedId);
+  if (!block) return;
+  const svgEl = getActiveSvg();
+  if (!svgEl) return;
+  const svgRect = svgEl.getBoundingClientRect();
+  const bx = svgRect.left + block.x;
+  const by = svgRect.top + block.y - (block.fontSize || 28) - 60;
+  const toolW = 480;
+  let left = Math.max(8, Math.min(bx, window.innerWidth - toolW - 8));
+  let top = Math.max(8, by);
+  selToolbar.style.left = left + 'px';
+  selToolbar.style.top = top + 'px';
+  updateSelToolbar(block);
+}
+
+/* ══════════════════════════════════════════════════════
+   Interaction: Drag, Handle, DblClick
+══════════════════════════════════════════════════════ */
+let dragState = null; // { type: 'move'|'left-handle'|'right-handle', blockId, startX, startY, origX, origY, origW, svgEl }
+
+function getSvgPoint(svgEl, clientX, clientY) {
+  const rect = svgEl.getBoundingClientRect();
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function setupSvgInteraction(svgEl, panel) {
+  // Double-click → create block
+  svgEl.addEventListener('dblclick', (e) => {
+    if (e.target.closest('.block-group') || e.target.closest('.sel-overlay')) return;
+    if (panel === 'top') return; // read-only
+    const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+    beginTextInput(svgEl, pt.x, pt.y, null, panel === 'bottom' ? 'new' : 'original');
+    e.preventDefault();
+  });
+
+  // Pointer down on block → select / start drag
+  svgEl.addEventListener('pointerdown', (e) => {
+    if (panel === 'top') return;
+
+    // Check if hitting a handle
+    const handle = e.target.closest('[data-handle]');
+    if (handle && selectedId !== null) {
+      const block = state.blocks.find(b => b.id === selectedId);
+      if (!block) return;
+      const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+      dragState = {
+        type: handle.dataset.handle === 'left' ? 'left-handle' : 'right-handle',
+        blockId: selectedId,
+        startX: pt.x, startY: pt.y,
+        origX: block.x, origY: block.y,
+        origW: block.width,
+        svgEl
+      };
+      svgEl.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+      return;
+    }
+
+    // Hit a block?
+    const blockGroup = e.target.closest('.block-group');
+    if (blockGroup) {
+      const id = parseInt(blockGroup.dataset.id);
+      // Check block belongs to this panel context
+      const block = state.blocks.find(b => b.id === id);
+      if (!block) return;
+      if (currentTab === 'write' && block.panel === 'original') return; // read-only in write tab
+      selectBlock(id);
+      const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+      dragState = {
+        type: 'move',
+        blockId: id,
+        startX: pt.x, startY: pt.y,
+        origX: block.x, origY: block.y,
+        origW: block.width,
+        svgEl
+      };
+      svgEl.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+      return;
+    }
+
+    // Click on empty space → deselect
+    if (!e.target.closest('.sel-overlay')) {
+      deselectAll();
+    }
+  });
+
+  svgEl.addEventListener('pointermove', (e) => {
+    if (!dragState || dragState.svgEl !== svgEl) return;
+    const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+    const dx = pt.x - dragState.startX;
+    const dy = pt.y - dragState.startY;
+    const block = state.blocks.find(b => b.id === dragState.blockId);
+    if (!block) return;
+
+    if (dragState.type === 'move') {
+      block.x = dragState.origX + dx;
+      block.y = dragState.origY + dy;
+    } else if (dragState.type === 'right-handle') {
+      block.width = Math.max(40, dragState.origW + dx);
+    } else if (dragState.type === 'left-handle') {
+      const newW = Math.max(40, dragState.origW - dx);
+      block.x = dragState.origX + (dragState.origW - newW);
+      block.width = newW;
+    }
+    renderBlocks();
+    positionSelToolbar();
+  });
+
+  svgEl.addEventListener('pointerup', (e) => {
+    if (dragState && dragState.svgEl === svgEl) {
+      dragState = null;
+    }
+  });
+
+  // Double-click on existing block → edit
+  svgEl.addEventListener('dblclick', (e) => {
+    const blockGroup = e.target.closest('.block-group');
+    if (!blockGroup) return;
+    const id = parseInt(blockGroup.dataset.id);
+    const block = state.blocks.find(b => b.id === id);
+    if (!block) return;
+    if (currentTab === 'write' && block.panel === 'original') return;
+    beginTextInput(svgEl, block.x, block.y, block, block.panel);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+}
+
+setupSvgInteraction(learnSvg, 'learn');
+setupSvgInteraction(writeSvgBot, 'bottom');
+
+/* ══════════════════════════════════════════════════════
+   Inline Text Input
+══════════════════════════════════════════════════════ */
+const textOverlay = document.getElementById('text-overlay');
+const textInputEl = document.getElementById('text-input-el');
+let editingBlock = null;
+let editingPanel = 'original';
+let editingSvg = null;
+let inputOriginX = 0;
+let inputOriginY = 0;
+
+function beginTextInput(svgEl, svgX, svgY, existingBlock, panel) {
+  editingBlock = existingBlock || null;
+  editingPanel = panel;
+  editingSvg = svgEl;
+
+  const svgRect = svgEl.getBoundingClientRect();
+  const fs = existingBlock ? existingBlock.fontSize : 28;
+  const font = getCanvasFont();
+
+  inputOriginX = svgX;
+  inputOriginY = svgY;
+
+  const screenX = svgRect.left + svgX;
+  const screenY = svgRect.top + svgY - fs;
+
+  textInputEl.style.fontFamily = `'${font}', sans-serif`;
+  textInputEl.style.fontSize = fs + 'px';
+  textInputEl.style.color = existingBlock ? existingBlock.color : '#3D3A4E';
+  textInputEl.style.left = screenX + 'px';
+  textInputEl.style.top = screenY + 'px';
+  textInputEl.value = existingBlock ? existingBlock.text : '';
+  textInputEl.style.width = (existingBlock ? existingBlock.width : 120) + 'px';
+
+  textOverlay.classList.add('active');
+  textInputEl.focus();
+  textInputEl.select();
+}
+
+function commitTextInput() {
+  if (!textOverlay.classList.contains('active')) return;
+  const val = textInputEl.value.trim();
+  if (editingBlock) {
+    if (val === '') {
+      // Delete the block
+      state.blocks = state.blocks.filter(b => b.id !== editingBlock.id);
+      if (selectedId === editingBlock.id) deselectAll();
+    } else {
+      editingBlock.text = val;
+    }
+  } else if (val !== '') {
+    // Estimate initial width from text length
+    const estW = Math.max(60, val.length * (28 * 0.65));
+    const block = {
+      id: nextId++,
+      text: val,
+      x: inputOriginX,
+      y: inputOriginY,
+      width: estW,
+      fontSize: 28,
+      slide: false,
+      color: '#3D3A4E',
+      panel: editingPanel
+    };
+    state.blocks.push(block);
+    selectBlock(block.id);
+  }
+  textOverlay.classList.remove('active');
+  textInputEl.value = '';
+  renderBlocks();
+}
+
+textInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { commitTextInput(); e.preventDefault(); }
+  if (e.key === 'Escape') { textOverlay.classList.remove('active'); }
+  // Auto-resize width
+  setTimeout(() => {
+    const chars = textInputEl.value.length || 1;
+    const fs = parseInt(textInputEl.style.fontSize) || 28;
+    textInputEl.style.width = Math.max(80, chars * fs * 0.65) + 'px';
+  }, 0);
+});
+
+textInputEl.addEventListener('blur', () => {
+  setTimeout(commitTextInput, 100);
+});
+
+/* ══════════════════════════════════════════════════════
+   Selection Toolbar Actions
+══════════════════════════════════════════════════════ */
+selFontSize.addEventListener('input', () => {
+  selFsVal.textContent = selFontSize.value;
+  const block = state.blocks.find(b => b.id === selectedId);
+  if (block) { block.fontSize = parseInt(selFontSize.value); renderBlocks(); positionSelToolbar(); }
+});
+
+selColor.addEventListener('input', () => {
+  const block = state.blocks.find(b => b.id === selectedId);
+  if (block) { block.color = selColor.value; renderBlocks(); }
+});
+
+document.querySelectorAll('.color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    const block = state.blocks.find(b => b.id === selectedId);
+    if (block) {
+      block.color = sw.dataset.color;
+      selColor.value = sw.dataset.color;
+      renderBlocks();
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+    }
+  });
+});
+
+selSlideToggle.addEventListener('click', () => {
+  const block = state.blocks.find(b => b.id === selectedId);
+  if (block) {
+    block.slide = !block.slide;
+    selSlideToggle.classList.toggle('on', block.slide);
+    renderBlocks();
+    positionSelToolbar();
+  }
+});
+
+selDelBtn.addEventListener('click', () => {
+  if (selectedId === null) return;
+  state.blocks = state.blocks.filter(b => b.id !== selectedId);
+  deselectAll();
+  renderBlocks();
+});
+
+/* ══════════════════════════════════════════════════════
+   Tabs
+══════════════════════════════════════════════════════ */
+const learnWrap = document.getElementById('learn-canvas-wrap');
+const writeWrap = document.getElementById('write-canvas-wrap');
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = btn.dataset.tab;
+    if (currentTab === 'learn') {
+      learnWrap.style.display = 'block';
+      writeWrap.style.display = 'none';
+    } else {
+      learnWrap.style.display = 'none';
+      writeWrap.style.display = 'flex';
+      writeWrap.style.flexDirection = 'column';
+      writeWrap.style.overflow = 'hidden';
+      writeWrap.style.flex = '1';
+    }
+    deselectAll();
+    renderBlocks();
+    renderAllGuideLines();
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   Space Mode & Line Count
+══════════════════════════════════════════════════════ */
+document.getElementById('mode-guide').addEventListener('click', () => {
+  state.spaceMode = 'guide';
+  document.getElementById('mode-guide').classList.add('active');
+  document.getElementById('mode-free').classList.remove('active');
+  document.getElementById('line-count-group').style.display = 'flex';
+  renderAllGuideLines();
+});
+
+document.getElementById('mode-free').addEventListener('click', () => {
+  state.spaceMode = 'free';
+  document.getElementById('mode-free').classList.add('active');
+  document.getElementById('mode-guide').classList.remove('active');
+  document.getElementById('line-count-group').style.display = 'none';
+  renderAllGuideLines();
+});
+
+const lineCountSlider = document.getElementById('line-count');
+const lineCountVal = document.getElementById('line-count-val');
+lineCountSlider.addEventListener('input', () => {
+  state.lineCount = parseInt(lineCountSlider.value);
+  lineCountVal.textContent = state.lineCount;
+  renderAllGuideLines();
+});
+
+/* ══════════════════════════════════════════════════════
+   Song Title
+══════════════════════════════════════════════════════ */
+document.getElementById('song-title').addEventListener('input', (e) => {
+  state.songTitle = e.target.value;
+});
+
+/* ══════════════════════════════════════════════════════
+   Language
+══════════════════════════════════════════════════════ */
+document.getElementById('lang-select').addEventListener('change', (e) => {
+  lang = e.target.value;
+  state.lang = lang;
+  applyI18n();
+  renderBlocks();
+});
+
+/* ══════════════════════════════════════════════════════
+   Dropdowns
+══════════════════════════════════════════════════════ */
+function setupDropdown(btnId, menuId) {
+  const btn = document.getElementById(btnId);
+  const menu = document.getElementById(menuId);
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = menu.classList.contains('open');
+    closeAllDropdowns();
+    if (!isOpen) menu.classList.add('open');
+  });
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+}
+
+document.addEventListener('click', closeAllDropdowns);
+setupDropdown('btn-save','save-menu');
+setupDropdown('btn-export','export-menu');
+
+/* ══════════════════════════════════════════════════════
+   Save / Load JSON
+══════════════════════════════════════════════════════ */
+function getStateSnapshot() {
+  return {
+    version: 1,
+    songTitle: state.songTitle,
+    lang: state.lang,
+    spaceMode: state.spaceMode,
+    lineCount: state.lineCount,
+    blocks: state.blocks.map(b => ({ ...b }))
+  };
+}
+
+document.getElementById('menu-save-json').addEventListener('click', () => {
+  closeAllDropdowns();
+  const snap = getStateSnapshot();
+  const blob = new Blob([JSON.stringify(snap, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (state.songTitle || 'easy-score') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(t('toastSaved'));
+});
+
+const fileInput = document.getElementById('file-input');
+document.getElementById('menu-load-json').addEventListener('click', () => {
+  closeAllDropdowns();
+  fileInput.click();
+});
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const loaded = JSON.parse(ev.target.result);
+      applyLoadedState(loaded);
+      showToast(t('toastLoaded'));
+    } catch { alert('Invalid JSON'); }
+  };
+  reader.readAsText(file);
+  fileInput.value = '';
+});
+
+function applyLoadedState(loaded) {
+  state.songTitle = loaded.songTitle || '';
+  state.lang = loaded.lang || 'ko';
+  state.spaceMode = loaded.spaceMode || 'guide';
+  state.lineCount = loaded.lineCount || 3;
+  state.blocks = (loaded.blocks || []).map(b => ({ ...b }));
+  nextId = Math.max(nextId, ...state.blocks.map(b => b.id + 1), 1);
+  lang = state.lang;
+  document.getElementById('lang-select').value = lang;
+  document.getElementById('song-title').value = state.songTitle;
+  lineCountSlider.value = state.lineCount;
+  lineCountVal.textContent = state.lineCount;
+  if (state.spaceMode === 'guide') {
+    document.getElementById('mode-guide').classList.add('active');
+    document.getElementById('mode-free').classList.remove('active');
+    document.getElementById('line-count-group').style.display = 'flex';
+  } else {
+    document.getElementById('mode-free').classList.add('active');
+    document.getElementById('mode-guide').classList.remove('active');
+    document.getElementById('line-count-group').style.display = 'none';
+  }
+  applyI18n();
+  deselectAll();
+  renderAllGuideLines();
+  renderBlocks();
+}
+
+/* ══════════════════════════════════════════════════════
+   Export: PNG Download + Clipboard
+══════════════════════════════════════════════════════ */
+async function captureCanvas() {
+  deselectAll();
+  const svgEl = getActiveSvg();
+  // Serialize SVG to canvas via html2canvas on a wrapper div
+  const wrapper = svgEl.parentElement;
+  try {
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: '#FEFBF3',
+      scale: 2,
+      logging: false,
+      useCORS: true
+    });
+    return canvas;
+  } catch (e) {
+    // fallback: SVG to blob
+    return null;
+  }
+}
+
+document.getElementById('menu-dl-img').addEventListener('click', async () => {
+  closeAllDropdowns();
+  const canvas = await captureCanvas();
+  if (!canvas) { showToast('Export error'); return; }
+  const a = document.createElement('a');
+  a.download = (state.songTitle || 'easy-score') + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  showToast(t('toastSaved'));
+});
+
+document.getElementById('menu-copy-img').addEventListener('click', async () => {
+  closeAllDropdowns();
+  const canvas = await captureCanvas();
+  if (!canvas) { showToast('Export error'); return; }
+  canvas.toBlob(async (blob) => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      showToast(t('toastImgCopied'));
+    } catch {
+      showToast('Clipboard not supported');
+    }
+  }, 'image/png');
+});
+
+/* ══════════════════════════════════════════════════════
+   Share Link
+══════════════════════════════════════════════════════ */
+document.getElementById('menu-share-link').addEventListener('click', () => {
+  closeAllDropdowns();
+  const snap = getStateSnapshot();
+  const encoded = btoa(encodeURIComponent(JSON.stringify(snap)));
+  const url = location.origin + location.pathname + '#d=' + encoded;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast(t('toastLinkCopied'));
+  }).catch(() => {
+    prompt('Copy this link:', url);
+  });
+});
+
+function loadFromHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#d=')) return;
+  try {
+    const encoded = hash.slice(3);
+    const json = decodeURIComponent(atob(encoded));
+    const loaded = JSON.parse(json);
+    applyLoadedState(loaded);
+  } catch (e) { /* ignore */ }
+}
+
+/* ══════════════════════════════════════════════════════
+   Help Modal
+══════════════════════════════════════════════════════ */
+const helpModal = document.getElementById('help-modal');
+document.getElementById('btn-help').addEventListener('click', () => {
+  helpModal.classList.add('open');
+});
+document.getElementById('modal-close').addEventListener('click', () => {
+  helpModal.classList.remove('open');
+});
+helpModal.addEventListener('click', (e) => {
+  if (e.target === helpModal) helpModal.classList.remove('open');
+});
+
+/* ══════════════════════════════════════════════════════
+   Toast
+══════════════════════════════════════════════════════ */
+let toastTimeout;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+/* ══════════════════════════════════════════════════════
+   Resize → Redraw guide lines
+══════════════════════════════════════════════════════ */
+const ro = new ResizeObserver(() => {
+  renderAllGuideLines();
+});
+ro.observe(learnSvg.parentElement);
+ro.observe(writeSvgTop.parentElement);
+ro.observe(writeSvgBot.parentElement);
+
+/* ══════════════════════════════════════════════════════
+   Keyboard shortcuts
+══════════════════════════════════════════════════════ */
+document.addEventListener('keydown', (e) => {
+  if (e.target === textInputEl) return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    state.blocks = state.blocks.filter(b => b.id !== selectedId);
+    deselectAll();
+    renderBlocks();
+  }
+  if (e.key === 'Escape') {
+    deselectAll();
+    textOverlay.classList.remove('active');
+  }
+});
+
+/* ══════════════════════════════════════════════════════
+   Init
+══════════════════════════════════════════════════════ */
+function init() {
+  applyI18n();
+  loadFromHash();
+  renderAllGuideLines();
+  renderBlocks();
+
+  // Add a few sample blocks if empty
+  if (state.blocks.length === 0) {
+    const sampleBlocks = [
+      { id: nextId++, text: '반', x: 60, y: 180, width: 80, fontSize: 32, slide: false, color: '#3D3A4E', panel: 'original' },
+      { id: nextId++, text: '짝', x: 160, y: 140, width: 80, fontSize: 32, slide: false, color: '#3D3A4E', panel: 'original' },
+      { id: nextId++, text: '반', x: 260, y: 100, width: 80, fontSize: 32, slide: false, color: '#3D3A4E', panel: 'original' },
+      { id: nextId++, text: '짝', x: 360, y: 140, width: 80, fontSize: 32, slide: false, color: '#D4A574', panel: 'original' },
+      { id: nextId++, text: '반짝', x: 460, y: 120, width: 140, fontSize: 32, slide: true, color: '#9FBED4', panel: 'original' },
+      { id: nextId++, text: '작은', x: 620, y: 80, width: 100, fontSize: 32, slide: false, color: '#3D3A4E', panel: 'original' },
+      { id: nextId++, text: '별', x: 740, y: 60, width: 70, fontSize: 36, slide: false, color: '#D4A574', panel: 'original' },
+    ];
+    state.blocks = sampleBlocks;
+    renderBlocks();
+  }
+}
+
+// Handle window resize for toolbar position
+window.addEventListener('resize', () => {
+  if (selectedId !== null) positionSelToolbar();
+  renderAllGuideLines();
+});
+
+init();
+</script>
+</body>
+</html>
