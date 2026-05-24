@@ -139,6 +139,9 @@ header {
   letter-spacing: 0.5px;
   line-height: 1;
   color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .logo-title.en {
   font-family: 'Pretendard GOV', 'Pretendard Variable', sans-serif;
@@ -464,66 +467,70 @@ svg.score-canvas {
   text-align: center;
 }
 
-/* ── Text Input Overlay ── */
+/* ── Text Input Overlay (fixed bar at top of canvas, Canva-style) ── */
 #text-overlay {
   position: fixed;
   pointer-events: none;
-  z-index: 100;
+  z-index: 200;
   display: none;
+  left: 50%;
+  transform: translateX(-50%);
 }
 #text-overlay.active {
   display: block;
   pointer-events: auto;
 }
+#text-input-bar {
+  background: rgba(255,255,255,0.97);
+  border: 1.5px solid var(--primary-soft);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(91,141,239,0.22);
+  padding: 10px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(10px);
+  min-width: 240px;
+  max-width: 92vw;
+}
 #text-input-el {
-  position: absolute;
-  border: 2.5px solid var(--primary);
+  border: 2px solid var(--primary);
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 4px 20px rgba(91,141,239,0.25), 0 0 0 4px var(--primary-soft);
-  padding: 4px 10px;
-  font-family: var(--canvas-font, 'Gaegu');
-  font-size: 32px;
+  padding: 5px 12px;
+  font-size: 28px;
   color: var(--ink);
   outline: none;
-  min-width: 100px;
-  min-height: 44px;
+  min-width: 180px;
+  max-width: 68vw;
+  width: 260px;
   line-height: 1.2;
   white-space: nowrap;
-  resize: none;
   overflow: hidden;
   caret-color: var(--primary);
+  box-shadow: inset 0 0 0 2px var(--primary-soft);
 }
 .text-input-hint {
-  display: none;
-  position: fixed;
-  background: var(--ink);
-  color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  padding: 5px 10px;
-  border-radius: 6px;
+  color: var(--ink-soft);
   white-space: nowrap;
-  pointer-events: none;
-  opacity: 0.92;
-  z-index: 101;
 }
-#text-overlay.active ~ #text-input-hint,
-#text-overlay.active .text-input-hint { display: block; }
 
-/* ── Selection Toolbar (floating) ── */
+/* ── Selection Toolbar (top of canvas bar, Canva-style) ── */
 #sel-toolbar {
   display: none;
-  position: fixed;
-  z-index: 150;
   background: var(--surface);
-  border: 1.5px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 6px 24px rgba(42,45,63,0.15);
-  padding: 10px 14px;
-  gap: 14px;
+  border-bottom: 1.5px solid var(--line);
+  padding: 8px 14px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(42,45,63,0.07);
+  z-index: 10;
+  overflow-x: auto;
 }
 #sel-toolbar.active { display: flex; }
 
@@ -773,12 +780,16 @@ footer a:hover { color: var(--primary); }
   .logo { font-size: 15px; gap: 8px; }
   .logo-icon { font-size: 22px; }
   .logo-sub { display: none; }
+  .logo-title { font-size: 17px; max-width: 130px; }
   .icon-btn { width: 42px; height: 42px; }
   .tab-btn { padding: 10px 14px 12px; font-size: 14px; }
   .control-bar { gap: 10px; padding: 10px 14px; }
   .title-input { min-width: 140px; font-size: 14px; }
   input[type="range"] { width: 90px; }
   #sel-toolbar { padding: 8px 10px; gap: 10px; }
+}
+@media (max-width: 480px) {
+  .logo-title { display: none; }
 }
 </style>
 </head>
@@ -930,6 +941,44 @@ footer a:hover { color: var(--primary); }
 
   <!-- Canvas Area -->
   <div id="canvas-area">
+
+    <!-- Selection toolbar — Canva-style: fixed at top of canvas -->
+    <div id="sel-toolbar">
+      <span class="sel-ctrl-label" data-i18n="fontSize">크기</span>
+      <input type="range" id="sel-font-size" min="14" max="80" value="28" style="width:70px;">
+      <span class="fs-label" id="sel-fs-val">28</span>
+
+      <span class="sel-ctrl-label" data-i18n="color">색</span>
+      <div class="color-swatches" id="color-swatches">
+        <div class="color-swatch selected" data-color="#2A2D3F" style="background:#2A2D3F;" title="검정"></div>
+        <div class="color-swatch" data-color="#5B8DEF" style="background:#5B8DEF;" title="파랑"></div>
+        <div class="color-swatch" data-color="#7DD3B8" style="background:#7DD3B8;" title="민트"></div>
+        <div class="color-swatch" data-color="#FFB088" style="background:#FFB088;" title="주황"></div>
+        <div class="color-swatch" data-color="#F4A6B7" style="background:#F4A6B7;" title="분홍"></div>
+        <div class="color-swatch" data-color="#A78BFA" style="background:#A78BFA;" title="보라"></div>
+        <input type="color" id="sel-color" value="#2A2D3F" title="커스텀 색상">
+      </div>
+
+      <span class="sel-ctrl-label">폰트</span>
+      <select id="sel-font" class="font-select">
+        <option value="Pretendard GOV">Pretendard GOV</option>
+        <option value="Gaegu">Gaegu (손글씨)</option>
+        <option value="Noto Sans KR">Noto Sans KR</option>
+        <option value="Nanum Myeongjo">나눔명조</option>
+        <option value="Dongle">Dongle</option>
+        <option value="Black Han Sans">블랙 한 산스</option>
+      </select>
+
+      <button class="slide-toggle-btn" id="sel-slide-toggle">
+        <span class="material-symbols-rounded">trending_down</span>
+        <span data-i18n="slide">슬라이드</span>
+      </button>
+
+      <button class="del-btn" id="sel-del-btn" title="삭제">
+        <span class="material-symbols-rounded" style="font-size:16px;">delete</span>
+      </button>
+    </div>
+
     <!-- LEARN tab: single canvas -->
     <div id="learn-canvas-wrap" class="canvas-wrapper">
       <div class="canvas-empty-hint" id="learn-empty-hint">
@@ -945,6 +994,7 @@ footer a:hover { color: var(--primary); }
         <rect width="100%" height="100%" fill="url(#dots-learn)" id="learn-bg-dots"/>
         <g id="guide-lines-learn"></g>
         <g id="blocks-learn"></g>
+        <g id="text-preview-learn"></g>
       </svg>
     </div>
 
@@ -970,6 +1020,7 @@ footer a:hover { color: var(--primary); }
           <rect width="100%" height="100%" fill="url(#dots-write)" id="write-bg-dots"/>
           <g id="guide-lines-write-bottom"></g>
           <g id="blocks-write-bottom"></g>
+          <g id="text-preview-write-bot"></g>
         </svg>
       </div>
     </div>
@@ -981,47 +1032,12 @@ footer a:hover { color: var(--primary); }
   </footer>
 </div>
 
-<!-- Text input overlay -->
+<!-- Text input overlay — fixed bar at top of canvas (Canva-style) -->
 <div id="text-overlay">
-  <input type="text" id="text-input-el" autocomplete="off" autocapitalize="off" spellcheck="false">
-  <div class="text-input-hint" id="text-input-hint">Enter로 확정 · Esc로 취소</div>
-</div>
-
-<!-- Selection toolbar -->
-<div id="sel-toolbar">
-  <span class="sel-ctrl-label" data-i18n="fontSize">크기</span>
-  <input type="range" id="sel-font-size" min="14" max="80" value="28" style="width:70px;">
-  <span class="fs-label" id="sel-fs-val">28</span>
-
-  <span class="sel-ctrl-label" data-i18n="color">색</span>
-  <div class="color-swatches" id="color-swatches">
-    <div class="color-swatch selected" data-color="#2A2D3F" style="background:#2A2D3F;" title="검정"></div>
-    <div class="color-swatch" data-color="#5B8DEF" style="background:#5B8DEF;" title="파랑"></div>
-    <div class="color-swatch" data-color="#7DD3B8" style="background:#7DD3B8;" title="민트"></div>
-    <div class="color-swatch" data-color="#FFB088" style="background:#FFB088;" title="주황"></div>
-    <div class="color-swatch" data-color="#F4A6B7" style="background:#F4A6B7;" title="분홍"></div>
-    <div class="color-swatch" data-color="#A78BFA" style="background:#A78BFA;" title="보라"></div>
-    <input type="color" id="sel-color" value="#2A2D3F" title="커스텀 색상">
+  <div id="text-input-bar">
+    <input type="text" id="text-input-el" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+    <div class="text-input-hint" id="text-input-hint">스페이스로 완성 · Enter로 마침 · Esc로 취소</div>
   </div>
-
-  <span class="sel-ctrl-label">폰트</span>
-  <select id="sel-font" class="font-select">
-    <option value="Pretendard GOV">Pretendard GOV</option>
-    <option value="Gaegu">Gaegu (손글씨)</option>
-    <option value="Noto Sans KR">Noto Sans KR</option>
-    <option value="Nanum Myeongjo">나눔명조</option>
-    <option value="Dongle">Dongle</option>
-    <option value="Black Han Sans">블랙 한 산스</option>
-  </select>
-
-  <button class="slide-toggle-btn" id="sel-slide-toggle">
-    <span class="material-symbols-rounded">trending_down</span>
-    <span data-i18n="slide">슬라이드</span>
-  </button>
-
-  <button class="del-btn" id="sel-del-btn" title="삭제">
-    <span class="material-symbols-rounded" style="font-size:16px;">delete</span>
-  </button>
 </div>
 
 <!-- Help Modal -->
@@ -1196,7 +1212,7 @@ function getBlockRenderPos(block) {
   const scale = getMeasureScale();
   return {
     svgX:        localX * scale,
-    svgY:        row * ROW_HEIGHT + block.y,
+    svgY:        row * ROW_HEIGHT + block.y * ROW_HEIGHT,
     renderWidth: (block.width || CANONICAL_MW) * scale,
     row,
     scale
@@ -1204,13 +1220,14 @@ function getBlockRenderPos(block) {
 }
 
 // Convert absolute SVG click coords → block canonical coords (for creating blocks)
+// block.y is stored as fraction of ROW_HEIGHT (0–1)
 function svgToBlockCoords(svgX, svgY) {
   const scale = getMeasureScale();
   const mpr   = getMeasuresPerRow();
   const row   = Math.floor(svgY / ROW_HEIGHT);
   const localY = svgY - row * ROW_HEIGHT;
   const absX   = row * mpr * CANONICAL_MW + svgX / scale;
-  return { blockX: absX, blockY: localY };
+  return { blockX: absX, blockY: localY / ROW_HEIGHT };
 }
 
 let state = {
@@ -1537,16 +1554,7 @@ function updateSelToolbar(block) {
 function positionSelToolbar() {
   const block = state.blocks.find(b => b.id === selectedId);
   if (!block) return;
-  const svgEl = getActiveSvg();
-  if (!svgEl) return;
-  const svgRect = svgEl.getBoundingClientRect();
-  const { svgX, svgY } = getBlockRenderPos(block);
-  const bx = svgRect.left + svgX;
-  const by = svgRect.top + svgY - (block.fontSize || 32) - 60;
-  const toolW = 500;
-  selToolbar.style.left = Math.max(8, Math.min(bx, window.innerWidth - toolW - 8)) + 'px';
-  selToolbar.style.top  = Math.max(8, by) + 'px';
-  updateSelToolbar(block);
+  updateSelToolbar(block); // toolbar is fixed at top of canvas-area, no JS positioning needed
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1652,12 +1660,14 @@ function setupSvgInteraction(svgEl, panel) {
     const MIN_W = 20 / scale; // min block width in canonical units
 
     if (dragState.type === 'move') {
-      // Clamp x within current row, y within current row height
+      // Clamp x within current row, y within current row height (y stored as fraction 0–1)
       const minX = curRow * rowW;
       const maxX = (curRow + 1) * rowW - (block.width || MIN_W);
       block.x = Math.max(minX, Math.min(maxX, dragState.origX + dxPx / scale));
-      block.y = Math.max(CANVAS_PAD_TOP, Math.min(ROW_HEIGHT - CANVAS_PAD_BOT - (block.fontSize || 32),
-                  dragState.origY + dyPx));
+      const minYFrac = CANVAS_PAD_TOP / ROW_HEIGHT;
+      const maxYFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (block.fontSize || 32)) / ROW_HEIGHT;
+      block.y = Math.max(minYFrac, Math.min(maxYFrac,
+                  (dragState.origY * ROW_HEIGHT + dyPx) / ROW_HEIGHT));
     } else if (dragState.type === 'right-handle') {
       block.width = Math.max(MIN_W, dragState.origW + dxPx / scale);
     } else if (dragState.type === 'left-handle') {
@@ -1696,7 +1706,38 @@ let cancelNextCommit = false;
 function autoResizeInput() {
   const chars = Array.from(textInputEl.value).length || 1;
   const fs    = parseInt(textInputEl.style.fontSize) || 32;
-  textInputEl.style.width = Math.max(120, chars * fs * 0.95 + 24) + 'px';
+  textInputEl.style.width = Math.max(180, chars * fs * 0.9 + 24) + 'px';
+  updateTextPreview(textInputEl.value);
+}
+
+/* ── Live SVG text preview during input ── */
+const textPreviewLearn    = document.getElementById('text-preview-learn');
+const textPreviewWriteBot = document.getElementById('text-preview-write-bot');
+let _previewTextEl = null;
+
+function createTextPreview(svgEl, blockX, blockYFrac, fs, font, color) {
+  clearTextPreview();
+  const { svgX: x, svgY: y } = getBlockRenderPos({ x: blockX, y: blockYFrac, width: CANONICAL_MW });
+  const ns = 'http://www.w3.org/2000/svg';
+  _previewTextEl = document.createElementNS(ns, 'text');
+  _previewTextEl.setAttribute('x', x);
+  _previewTextEl.setAttribute('y', y);
+  _previewTextEl.setAttribute('font-family', `'${font}', 'Pretendard GOV', sans-serif`);
+  _previewTextEl.setAttribute('font-size', fs);
+  _previewTextEl.setAttribute('fill', color);
+  _previewTextEl.setAttribute('opacity', '0.5');
+  _previewTextEl.setAttribute('pointer-events', 'none');
+  _previewTextEl.textContent = '|';
+  const grp = (svgEl === learnSvg) ? textPreviewLearn : textPreviewWriteBot;
+  grp?.appendChild(_previewTextEl);
+}
+
+function updateTextPreview(text) {
+  if (_previewTextEl) _previewTextEl.textContent = text || '|';
+}
+
+function clearTextPreview() {
+  if (_previewTextEl) { _previewTextEl.remove(); _previewTextEl = null; }
 }
 
 /*
@@ -1710,47 +1751,51 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
   editingSvg    = svgEl;
   cancelNextCommit = false;
 
-  const svgRect = svgEl.getBoundingClientRect();
-  const font    = getCanvasFont();
-  let   screenX, screenY, fs;
+  const font = getCanvasFont();
+  let fs;
 
   if (editingBlock) {
     fs = editingBlock.fontSize || 32;
-    const { svgX, svgY, renderWidth: rw } = getBlockRenderPos(editingBlock);
-    screenX = svgRect.left + svgX;
-    screenY = svgRect.top  + svgY - fs;
     inputOriginX = editingBlock.x;
     inputOriginY = editingBlock.y;
-    textInputEl.style.width = Math.max(120, rw) + 'px';
     textInputEl.value = editingBlock.text || '';
+    textInputEl.style.width = Math.max(180, getBlockRenderPos(editingBlock).renderWidth) + 'px';
   } else {
     fs = 32;
     inputOriginX = newBlockX;
     inputOriginY = newBlockY;
-    const scale  = getMeasureScale();
-    const mpr    = getMeasuresPerRow();
-    const rowW   = mpr * CANONICAL_MW;
-    const row    = Math.floor(newBlockX / rowW);
-    const localX = (newBlockX - row * rowW) * scale;
-    screenX = svgRect.left + localX;
-    screenY = svgRect.top  + row * ROW_HEIGHT + newBlockY - fs;
     textInputEl.value = '';
-    textInputEl.style.width = '120px';
+    textInputEl.style.width = '260px';
   }
 
   const inputFont = editingBlock ? (editingBlock.font || font) :
                     (panel === 'new' ? 'Pretendard GOV' : font);
+  const inputColor = editingBlock ? (editingBlock.color || '#2A2D3F') : '#2A2D3F';
   textInputEl.style.fontFamily = `'${inputFont}', 'Pretendard GOV', sans-serif`;
   textInputEl.style.fontSize   = fs + 'px';
-  textInputEl.style.color      = editingBlock ? (editingBlock.color || '#2A2D3F') : '#2A2D3F';
-  textInputEl.style.left = screenX + 'px';
-  textInputEl.style.top  = screenY + 'px';
+  textInputEl.style.color      = inputColor;
 
-  const hint = document.getElementById('text-input-hint');
-  if (hint) { hint.style.left = screenX + 'px'; hint.style.top = (screenY + fs + 22) + 'px'; }
+  // Canva-style: position input bar at top of canvas area (not at click position)
+  repositionTextInput();
+
+  // Live preview: show text at actual canvas position while typing
+  createTextPreview(svgEl, inputOriginX, inputOriginY, fs, inputFont, inputColor);
 
   textOverlay.classList.add('active');
-  requestAnimationFrame(() => { textInputEl.focus(); if (editingBlock) textInputEl.select(); autoResizeInput(); });
+  requestAnimationFrame(() => {
+    textInputEl.focus();
+    if (editingBlock) textInputEl.select();
+    autoResizeInput();
+  });
+}
+
+function repositionTextInput() {
+  const canvasArea = document.getElementById('canvas-area');
+  if (!canvasArea) return;
+  const vv = window.visualViewport;
+  const canvasRect = canvasArea.getBoundingClientRect();
+  const topY = vv ? Math.max(canvasRect.top + 8, vv.offsetTop + 8) : canvasRect.top + 8;
+  textOverlay.style.top = topY + 'px';
 }
 
 // Returns canonical units
@@ -1832,6 +1877,7 @@ function commitTextInput(andThenContinue = false) {
 
   textOverlay.classList.remove('active');
   textInputEl.value = '';
+  clearTextPreview();
   lastCommittedBlock = lastBlock;
   const savedSvg    = editingSvg;
   const savedPanel  = editingPanel;
@@ -1883,6 +1929,7 @@ textInputEl.addEventListener('keydown', (e) => {
     cancelNextCommit = true;
     textOverlay.classList.remove('active');
     textInputEl.value = '';
+    clearTextPreview();
     editingBlock = null;
     e.preventDefault();
     return;
@@ -1893,6 +1940,14 @@ textInputEl.addEventListener('input', autoResizeInput);
 
 textInputEl.addEventListener('blur', () => {
   setTimeout(() => { if (!isComposing) commitTextInput(); }, 220);
+});
+
+// Keep input bar visible above mobile keyboard
+window.visualViewport?.addEventListener('resize', () => {
+  if (textOverlay.classList.contains('active')) repositionTextInput();
+});
+window.visualViewport?.addEventListener('scroll', () => {
+  if (textOverlay.classList.contains('active')) repositionTextInput();
 });
 
 /* ══════════════════════════════════════════════════════
@@ -1953,9 +2008,10 @@ document.getElementById('height-narrow').addEventListener('click', () => {
   ROW_HEIGHT = 200;
   document.getElementById('height-narrow').classList.add('active');
   document.getElementById('height-normal').classList.remove('active');
+  // Clamp y fractions so blocks stay within the narrower row
   state.blocks.forEach(b => {
-    const maxY = ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || 28);
-    b.y = Math.min(b.y, maxY);
+    const maxFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || 28)) / ROW_HEIGHT;
+    b.y = Math.min(b.y, maxFrac);
   });
   updateCanvasSize(); renderAllGuideLines(); renderBlocks();
 });
@@ -2105,7 +2161,7 @@ setupDropdown('btn-export','export-menu');
 ══════════════════════════════════════════════════════ */
 function getStateSnapshot() {
   return {
-    version: 2,
+    version: 3,
     songTitle: state.songTitle,
     lang: state.lang,
     spaceMode: state.spaceMode,
@@ -2154,7 +2210,11 @@ function applyLoadedState(loaded) {
   state.spaceMode = loaded.spaceMode || 'guide';
   state.lineCount = loaded.lineCount || 3;
   state.measures = Math.max(MIN_MEASURES, Math.min(MAX_MEASURES, loaded.measures || 4));
-  state.blocks = (loaded.blocks || []).map(b => ({ ...b }));
+  state.blocks = (loaded.blocks || []).map(b => ({
+    ...b,
+    // Migrate: old format stored y in pixels (0–300); new format is fraction (0–1)
+    y: (b.y > 1.5) ? b.y / 300 : b.y
+  }));
   nextId = Math.max(nextId, ...state.blocks.map(b => b.id + 1), 1);
   lang = state.lang;
   document.getElementById('lang-select').value = lang;
@@ -2277,16 +2337,17 @@ function loadExample() {
   nextId = 1;
   const C = { ink: '#2A2D3F', blue: '#5B8DEF', mint: '#7DD3B8', peach: '#FFB088', rose: '#F4A6B7' };
   const M = CANONICAL_MW; // 200
+  const RH = 300; // original ROW_HEIGHT used to create example data
   // y positions within each row: lower number = higher pitch (y=0 is top)
   state.blocks = [
-    { id: nextId++, text: '반짝', x: M*0+15, y: 220, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '반짝', x: M*1+15, y: 190, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '작은', x: M*2+15, y: 155, width: 140, fontSize: 36, slide: false, color: C.blue,  panel: 'original' },
-    { id: nextId++, text: '별',   x: M*3+30, y: 115, width: 110, fontSize: 40, slide: false, color: C.peach, panel: 'original' },
-    { id: nextId++, text: '아름', x: M*4+15, y: 100, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '답게', x: M*5+15, y: 115, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '비치', x: M*6+15, y: 155, width: 155, fontSize: 36, slide: false, color: C.mint,  panel: 'original' },
-    { id: nextId++, text: '네',   x: M*7+15, y: 220, width: 230, fontSize: 36, slide: true,  color: C.rose,  panel: 'original' },
+    { id: nextId++, text: '반짝', x: M*0+15, y: 220/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '반짝', x: M*1+15, y: 190/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '작은', x: M*2+15, y: 155/RH, width: 140, fontSize: 36, slide: false, color: C.blue,  panel: 'original' },
+    { id: nextId++, text: '별',   x: M*3+30, y: 115/RH, width: 110, fontSize: 40, slide: false, color: C.peach, panel: 'original' },
+    { id: nextId++, text: '아름', x: M*4+15, y: 100/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '답게', x: M*5+15, y: 115/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '비치', x: M*6+15, y: 155/RH, width: 155, fontSize: 36, slide: false, color: C.mint,  panel: 'original' },
+    { id: nextId++, text: '네',   x: M*7+15, y: 220/RH, width: 230, fontSize: 36, slide: true,  color: C.rose,  panel: 'original' },
   ];
   document.getElementById('song-title').value = state.songTitle;
   document.getElementById('mode-guide').classList.add('active');
@@ -2379,17 +2440,26 @@ function init() {
   // "예시 보기" to see the sample score.
 }
 
-// Re-render when the viewport width crosses the MPR breakpoint (PC↔tablet)
+// Re-render on any viewport resize (debounced) — covers orientation changes and mobile keyboard
 let _lastMpr = getMeasuresPerRow();
+let _resizeTimer;
 window.addEventListener('resize', () => {
-  const mpr = getMeasuresPerRow();
-  if (mpr !== _lastMpr) {
-    _lastMpr = mpr;
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    _lastMpr = getMeasuresPerRow();
     updateCanvasSize();
     renderAllGuideLines();
     renderBlocks();
-  }
-  if (selectedId !== null) positionSelToolbar();
+    if (selectedId !== null) positionSelToolbar();
+  }, 60);
+});
+
+// Mobile keyboard resize: keep text input visible above keyboard
+window.visualViewport?.addEventListener('resize', () => {
+  if (textOverlay.classList.contains('active')) repositionTextInput();
+});
+window.visualViewport?.addEventListener('scroll', () => {
+  if (textOverlay.classList.contains('active')) repositionTextInput();
 });
 
 init();
