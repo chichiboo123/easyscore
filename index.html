@@ -201,6 +201,9 @@ header {
 }
 .dropdown-item:hover { background: var(--primary-soft); }
 .dropdown-item .material-symbols-rounded { font-size: 20px; color: var(--primary); }
+.dropdown-item-danger { color: #E05252; border-top: 1px solid var(--line); margin-top: 2px; }
+.dropdown-item-danger .material-symbols-rounded { color: #E05252; }
+.dropdown-item-danger:hover { background: #fdecea; }
 
 /* Language selector */
 #lang-select {
@@ -906,6 +909,10 @@ footer a:hover { color: var(--primary); }
           <span class="material-symbols-rounded">upload</span>
           <span data-i18n="loadJson">JSON 불러오기</span>
         </div>
+        <div class="dropdown-item dropdown-item-danger" id="menu-clear-all">
+          <span class="material-symbols-rounded">delete_sweep</span>
+          <span data-i18n="clearAll">모두 지우기</span>
+        </div>
       </div>
     </div>
 
@@ -1191,7 +1198,10 @@ const TRANSLATIONS = {
     toastLoadOriginal: '원곡 가사 %n개를 불러왔어요!',
     toastUndo: '실행 취소', toastRedo: '다시 실행',
     toastNoOriginal: '원곡 악보에 가사가 없어요',
-    undoTitle: '실행 취소 (Ctrl+Z)', redoTitle: '다시 실행 (Ctrl+Shift+Z)'
+    undoTitle: '실행 취소 (Ctrl+Z)', redoTitle: '다시 실행 (Ctrl+Shift+Z)',
+    clearAll: '모두 지우기', clearAllTitle: '캔버스를 모두 지우고 초기화합니다',
+    confirmClearAll: '캔버스의 모든 내용을 지울까요? 되돌릴 수 없어요.',
+    toastCleared: '캔버스가 초기화됐어요.'
   },
   en: {
     appTitle: 'Easy Score',
@@ -1220,6 +1230,9 @@ const TRANSLATIONS = {
     toastUndo: 'Undo', toastRedo: 'Redo',
     toastNoOriginal: 'The original score has no lyrics yet',
     undoTitle: 'Undo (Ctrl+Z)', redoTitle: 'Redo (Ctrl+Shift+Z)',
+    clearAll: 'Clear all', clearAllTitle: 'Clear canvas and reset',
+    confirmClearAll: 'Clear everything on the canvas? This cannot be undone.',
+    toastCleared: 'Canvas cleared.',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
     toastExample: 'Example loaded!'
@@ -1251,6 +1264,9 @@ const TRANSLATIONS = {
     toastUndo: '元に戻す', toastRedo: 'やり直し',
     toastNoOriginal: '原曲にまだ歌詞がありません',
     undoTitle: '元に戻す (Ctrl+Z)', redoTitle: 'やり直し (Ctrl+Shift+Z)',
+    clearAll: '全て消去', clearAllTitle: 'キャンバスを初期化します',
+    confirmClearAll: 'キャンバスの内容を全て消去しますか？元に戻せません。',
+    toastCleared: 'キャンバスを初期化しました。',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
     toastExample: 'サンプルを読み込みました！'
@@ -1553,7 +1569,7 @@ function makeSelectionOverlay(block, svgEl, isMulti) {
 
   const { svgX, svgY, renderWidth: rw } = getBlockRenderPos(block);
   const g  = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.setAttribute('class','sel-overlay'); g.setAttribute('pointer-events','all');
+  g.setAttribute('class','sel-overlay'); g.setAttribute('pointer-events','none');
   g.setAttribute('data-sel-id', block.id);
 
   const fs = block.fontSize || DEFAULT_FONT_SIZE;
@@ -1590,6 +1606,7 @@ function makeHandle(cx, cy, side) {
   c.setAttribute('stroke-width','2.5');
   c.setAttribute('cursor', side === 'slide-end' ? 'ns-resize' : 'ew-resize');
   c.setAttribute('data-handle', side);
+  c.setAttribute('pointer-events', 'all');
   return c;
 }
 
@@ -1629,6 +1646,7 @@ function renderBlocks() {
     const primary = state.blocks.find(b => b.id === selectedId);
     if (primary) updateSelToolbar(primary);
   }
+  scheduleSave();
 }
 
 function getActiveSvg() {
@@ -1724,7 +1742,6 @@ function setupSvgInteraction(svgEl, panel) {
     if (panel === 'top') return;
     if (hasDragged) return;
     if (textOverlay.classList.contains('active')) return;
-    if (e.target.closest('.sel-overlay')) return;
 
     const blockGroup = e.target.closest('.block-group');
     if (e.detail >= 2) {
@@ -1815,8 +1832,6 @@ function setupSvgInteraction(svgEl, panel) {
       svgEl.setPointerCapture(e.pointerId);
       e.stopPropagation(); return;
     }
-
-    if (e.target.closest('.sel-overlay')) return;
 
     // Empty canvas → start potential marquee selection
     const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
@@ -2763,6 +2778,55 @@ let historyStack = [];
 let redoStack = [];
 let _historyLockSnap = null;
 
+/* ── LocalStorage auto-save ── */
+const LS_KEY = 'easyscore-data';
+let _saveTimer = null;
+function scheduleSave() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try { localStorage.setItem(LS_KEY, snapshotState()); } catch(e) {}
+  }, 600);
+}
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    applySnapshot(raw);
+    return true;
+  } catch(e) { return false; }
+}
+function clearAllAndReset() {
+  if (!confirm(t('confirmClearAll'))) return;
+  state.blocks = [];
+  state.songTitle = '';
+  state.measures = 4;
+  state.lineCount = 3;
+  state.spaceMode = 'guide';
+  nextId = 1;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  historyStack.length = 0;
+  redoStack.length = 0;
+  updateHistoryButtons();
+  document.getElementById('song-title').value = '';
+  lineCountSlider.value = 3;
+  lineCountVal.textContent = 3;
+  document.getElementById('mode-guide').classList.add('active');
+  document.getElementById('mode-free').classList.remove('active');
+  document.getElementById('line-count-group').style.display = 'flex';
+  deselectAll();
+  updateCanvasSize();
+  renderAllGuideLines();
+  renderBlocks();
+  updateMeasureUI();
+  updateEmptyHint();
+  showToast(t('toastCleared'));
+}
+
+document.getElementById('menu-clear-all').addEventListener('click', () => {
+  closeAllDropdowns();
+  clearAllAndReset();
+});
+
 function snapshotState() {
   return JSON.stringify({
     blocks: state.blocks,
@@ -3057,12 +3121,15 @@ function init() {
   applyI18n();
   updateCanvasSize();
   updateMeasureUI();
-  loadFromHash();
+  // URL hash takes priority over localStorage (shareable links)
+  if (location.hash.startsWith('#d=')) {
+    loadFromHash();
+  } else {
+    loadFromLocalStorage();
+  }
   renderAllGuideLines();
   renderBlocks();
   updateEmptyHint();
-  // Start with an empty canvas — users open the Help modal and click
-  // "예시 보기" to see the sample score.
 }
 
 // Re-render on any viewport resize (debounced) — covers orientation changes and mobile keyboard
