@@ -449,6 +449,7 @@ svg.score-canvas {
   cursor: text;
   background: var(--surface);
   user-select: none;
+  touch-action: none;
 }
 
 /* Block cursor states — explicit grab/grabbing on the block and its hitbox.
@@ -856,6 +857,127 @@ footer a:hover { color: var(--primary); }
 @media (max-width: 480px) {
   .logo-title { display: none; }
 }
+
+/* ── Slideshow / Presentation Mode ── */
+#slideshow-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0D0F1A;
+  z-index: 500;
+  flex-direction: column;
+  align-items: stretch;
+  font-family: 'Pretendard GOV', 'Pretendard Variable', sans-serif;
+}
+#slideshow-overlay.active { display: flex; }
+
+.slideshow-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.slideshow-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.90);
+  font-family: 'Black Han Sans', 'Pretendard GOV', sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slideshow-counter {
+  font-size: 14px;
+  color: rgba(255,255,255,0.50);
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.slideshow-close {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.80);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.slideshow-close:hover { background: rgba(255,255,255,0.22); }
+.slideshow-close .material-symbols-rounded { font-size: 22px; }
+
+.slideshow-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 20px 80px;
+  min-height: 0;
+}
+.slideshow-svg-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  max-width: 100%;
+  max-height: 100%;
+}
+#slideshow-svg {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 12px 60px rgba(0,0,0,0.55);
+  display: block;
+}
+.slideshow-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  color: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+  z-index: 10;
+}
+.slideshow-nav .material-symbols-rounded { font-size: 28px; }
+.slideshow-nav:hover { background: rgba(255,255,255,0.25); transform: translateY(-50%) scale(1.08); }
+.slideshow-nav:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
+.slideshow-nav-prev { left: 16px; }
+.slideshow-nav-next { right: 16px; }
+
+.slideshow-dots {
+  display: flex; gap: 8px;
+  justify-content: center; align-items: center;
+  padding: 12px 0 18px;
+  flex-shrink: 0;
+}
+.slideshow-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.slideshow-dot.active { background: #5B8DEF; transform: scale(1.4); }
+
+@media (max-width: 600px) {
+  .slideshow-body { padding: 12px 56px; }
+  .slideshow-nav { width: 42px; height: 42px; }
+  .slideshow-nav-prev { left: 8px; }
+  .slideshow-nav-next { right: 8px; }
+}
 </style>
 </head>
 <body>
@@ -936,6 +1058,11 @@ footer a:hover { color: var(--primary); }
         </div>
       </div>
     </div>
+
+    <!-- Slideshow / Presentation -->
+    <button class="icon-btn" id="btn-slideshow" title="슬라이드 발표">
+      <span class="material-symbols-rounded">slideshow</span>
+    </button>
 
     <!-- Language -->
     <select id="lang-select" aria-label="Language">
@@ -1081,7 +1208,7 @@ footer a:hover { color: var(--primary); }
     </div>
 
     <!-- WRITE tab: two panels -->
-    <div id="write-canvas-wrap" style="display:none; flex: 1; flex-direction: column; overflow: hidden; display: none;">
+    <div id="write-canvas-wrap" style="display:none;">
       <!-- Top: original (read-only) -->
       <div class="canvas-wrapper write-top" id="write-top-wrap">
         <div class="write-panel-label" data-i18n="originalScore">원곡 악보</div>
@@ -1160,6 +1287,29 @@ footer a:hover { color: var(--primary); }
 
 <!-- Hidden file input for JSON load -->
 <input type="file" id="file-input" accept=".json" style="display:none;">
+
+<!-- Slideshow / Presentation Overlay -->
+<div id="slideshow-overlay">
+  <div class="slideshow-header">
+    <button class="slideshow-close" id="ss-close" title="닫기 (Esc)">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+    <span id="ss-title" class="slideshow-title">너를 위한 악보</span>
+    <span id="ss-counter" class="slideshow-counter">1 / 1</span>
+  </div>
+  <div class="slideshow-body">
+    <button class="slideshow-nav slideshow-nav-prev" id="ss-prev" title="이전 (←)">
+      <span class="material-symbols-rounded">chevron_left</span>
+    </button>
+    <div class="slideshow-svg-wrap">
+      <svg id="slideshow-svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <button class="slideshow-nav slideshow-nav-next" id="ss-next" title="다음 (→)">
+      <span class="material-symbols-rounded">chevron_right</span>
+    </button>
+  </div>
+  <div class="slideshow-dots" id="ss-dots"></div>
+</div>
 
 <!-- html2canvas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1729,6 +1879,7 @@ function positionSelToolbar() {
 // dragState.origX/origW in CANONICAL units; startX/startY in screen px (for delta calc)
 let dragState = null;
 let hasDragged = false;
+let _dragRafId = null;
 
 function getSvgPoint(svgEl, clientX, clientY) {
   const rect = svgEl.getBoundingClientRect();
@@ -1814,17 +1965,20 @@ function setupSvgInteraction(svgEl, panel) {
       // Begin multi-block move drag
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
       const origPositions = [];
+      const origSvgPositions = [];
       selectedIds.forEach(sid => {
         const bb = state.blocks.find(b => b.id === sid);
-        if (bb) origPositions.push({
-          id: sid, origX: bb.x, origY: bb.y, origW: bb.width
-        });
+        if (bb) {
+          origPositions.push({ id: sid, origX: bb.x, origY: bb.y, origW: bb.width });
+          const { svgX, svgY } = getBlockRenderPos(bb);
+          origSvgPositions.push({ id: sid, svgX, svgY });
+        }
       });
       beginHistory();
       dragState = {
         type: 'move-multi', blockId: id,
         startX: pt.x, startY: pt.y,
-        origPositions, svgEl
+        origPositions, origSvgPositions, svgEl
       };
       blockGroup.classList.add('dragging');
       svgEl.classList.add('dragging-active');
@@ -1877,8 +2031,26 @@ function setupSvgInteraction(svgEl, panel) {
         const maxYFrac = (ROW_HEIGHT - CANVAS_PAD_BOT - (b.fontSize || DEFAULT_FONT_SIZE)) / ROW_HEIGHT;
         b.y = Math.max(minYFrac, Math.min(maxYFrac, (op.origY * ROW_HEIGHT + dyPx) / ROW_HEIGHT));
       });
-      renderBlocks();
-      positionSelToolbar();
+      // Apply CSS transforms directly to SVG elements (no full DOM rebuild = smooth drag)
+      if (!_dragRafId) {
+        _dragRafId = requestAnimationFrame(() => {
+          _dragRafId = null;
+          if (!dragState || dragState.type !== 'move-multi') return;
+          dragState.origPositions.forEach(op => {
+            const b = state.blocks.find(bb => bb.id === op.id);
+            if (!b) return;
+            const { svgX: newSvgX, svgY: newSvgY } = getBlockRenderPos(b);
+            const orig = dragState.origSvgPositions?.find(p => p.id === op.id);
+            if (!orig) return;
+            const tdx = newSvgX - orig.svgX;
+            const tdy = newSvgY - orig.svgY;
+            const blockEl = svgEl.querySelector(`.block-group[data-id="${op.id}"]`);
+            if (blockEl) blockEl.style.transform = `translate(${tdx}px, ${tdy}px)`;
+            const selEl = svgEl.querySelector(`.sel-overlay[data-sel-id="${op.id}"]`);
+            if (selEl) selEl.style.transform = `translate(${tdx}px, ${tdy}px)`;
+          });
+        });
+      }
       return;
     }
 
@@ -1896,12 +2068,19 @@ function setupSvgInteraction(svgEl, panel) {
     } else if (dragState.type === 'slide-end') {
       block.slideDy = Math.max(-150, Math.min(150, dragState.origSlideDy + dyPx));
     }
-    renderBlocks();
-    positionSelToolbar();
+    // RAF-throttle re-renders for handle resize (60fps cap)
+    if (!_dragRafId) {
+      _dragRafId = requestAnimationFrame(() => {
+        _dragRafId = null;
+        renderBlocks();
+        positionSelToolbar();
+      });
+    }
   });
 
   svgEl.addEventListener('pointerup', (e) => {
     if (!dragState) return;
+    if (_dragRafId) { cancelAnimationFrame(_dragRafId); _dragRafId = null; }
     svgEl.classList.remove('dragging-active');
     document.body.style.cursor = '';
     svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
@@ -1915,9 +2094,38 @@ function setupSvgInteraction(svgEl, panel) {
       cancelHistory(); // marquee doesn't mutate state
     } else if (hasDragged) {
       commitHistory();
+      renderBlocks(); // commit final positions (clears CSS transforms)
+      positionSelToolbar();
     } else {
       cancelHistory(); // tap-without-drag on a block: no state change
     }
+    dragState = null;
+  });
+
+  // Clean up drag if touch is cancelled by system gesture
+  svgEl.addEventListener('pointercancel', (e) => {
+    if (!dragState || dragState.svgEl !== svgEl) return;
+    if (_dragRafId) { cancelAnimationFrame(_dragRafId); _dragRafId = null; }
+    svgEl.classList.remove('dragging-active');
+    document.body.style.cursor = '';
+    svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
+    // Restore moved blocks to pre-drag positions
+    if (dragState.origPositions) {
+      dragState.origPositions.forEach(op => {
+        const b = state.blocks.find(bb => bb.id === op.id);
+        if (b) { b.x = op.origX; b.y = op.origY; }
+      });
+    } else if (dragState.blockId != null) {
+      const block = state.blocks.find(b => b.id === dragState.blockId);
+      if (block) {
+        if (dragState.origX    != null) block.x      = dragState.origX;
+        if (dragState.origW    != null) block.width  = dragState.origW;
+        if (dragState.origSlideDy != null) block.slideDy = dragState.origSlideDy;
+      }
+    }
+    cancelHistory();
+    if (dragState.type === 'marquee') removeMarquee(svgEl);
+    renderBlocks();
     dragState = null;
   });
 }
@@ -3006,6 +3214,14 @@ document.getElementById('btn-load-original').addEventListener('click', loadOrigi
    Keyboard shortcuts
 ══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
+  // Slideshow keyboard navigation takes priority
+  if (_ssOverlay && _ssOverlay.classList.contains('active')) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')    { goSlide(-1); e.preventDefault(); return; }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { goSlide(1);  e.preventDefault(); return; }
+    if (e.key === 'Escape') { closeSlideshow(); e.preventDefault(); return; }
+    return;
+  }
+
   if (e.target === textInputEl) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
@@ -3111,6 +3327,214 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     deselectAll();
     textOverlay.classList.remove('active');
+  }
+});
+
+/* ══════════════════════════════════════════════════════
+   Slideshow / Presentation Mode
+══════════════════════════════════════════════════════ */
+let _slideIndex = 0;
+let _ssFitTimer = null;
+let _ssSwipeStartX = null;
+
+const _ssOverlay = document.getElementById('slideshow-overlay');
+const _ssSvg     = document.getElementById('slideshow-svg');
+const _ssTitle   = document.getElementById('ss-title');
+const _ssCounter = document.getElementById('ss-counter');
+const _ssDots    = document.getElementById('ss-dots');
+const _ssPrev    = document.getElementById('ss-prev');
+const _ssNext    = document.getElementById('ss-next');
+
+function getSlideshowRows() {
+  const mpr  = getMeasuresPerRow();
+  const rowW = mpr * CANONICAL_MW;
+  const panel = currentTab === 'learn' ? 'original' : 'new';
+  const rows = [];
+  for (let r = 0; r < getNumRows(); r++) {
+    const rowBlocks = state.blocks.filter(b =>
+      b.panel === panel && Math.floor(b.x / rowW) === r
+    );
+    rows.push({ row: r, blocks: rowBlocks });
+  }
+  return rows;
+}
+
+function renderSlideshowSlide(rows) {
+  if (!_ssSvg || !rows || rows.length === 0) return;
+  const NS  = 'http://www.w3.org/2000/svg';
+  const cw  = getCanvasWidth();
+  const mw  = getMeasureWidth();
+  const mpr = getMeasuresPerRow();
+  const r   = rows[_slideIndex].row;
+  const rowY = r * ROW_HEIGHT;
+  const usableH = ROW_HEIGHT - CANVAS_PAD_TOP - CANVAS_PAD_BOT;
+
+  _ssSvg.setAttribute('viewBox', `0 ${rowY} ${cw} ${ROW_HEIGHT}`);
+  _ssSvg.innerHTML = '';
+
+  // White background
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', 0); bg.setAttribute('y', rowY);
+  bg.setAttribute('width', cw); bg.setAttribute('height', ROW_HEIGHT);
+  bg.setAttribute('fill', '#FFFFFF');
+  _ssSvg.appendChild(bg);
+
+  // Dot pattern
+  const defs = document.createElementNS(NS, 'defs');
+  const pat  = document.createElementNS(NS, 'pattern');
+  pat.setAttribute('id', 'ss-dots-pat'); pat.setAttribute('patternUnits', 'userSpaceOnUse');
+  pat.setAttribute('width', '20'); pat.setAttribute('height', '20');
+  const dotC = document.createElementNS(NS, 'circle');
+  dotC.setAttribute('cx', '10'); dotC.setAttribute('cy', '10');
+  dotC.setAttribute('r', '1'); dotC.setAttribute('fill', 'rgba(91,141,239,0.10)');
+  pat.appendChild(dotC); defs.appendChild(pat);
+  _ssSvg.appendChild(defs);
+  const dotR = document.createElementNS(NS, 'rect');
+  dotR.setAttribute('x', 0); dotR.setAttribute('y', rowY);
+  dotR.setAttribute('width', cw); dotR.setAttribute('height', ROW_HEIGHT);
+  dotR.setAttribute('fill', 'url(#ss-dots-pat)');
+  _ssSvg.appendChild(dotR);
+
+  // Horizontal guide lines
+  if (state.spaceMode === 'guide') {
+    const step = usableH / (state.lineCount + 1);
+    for (let i = 1; i <= state.lineCount; i++) {
+      const y = rowY + CANVAS_PAD_TOP + step * i;
+      const ln = document.createElementNS(NS, 'line');
+      ln.setAttribute('x1', 0); ln.setAttribute('y1', y);
+      ln.setAttribute('x2', cw); ln.setAttribute('y2', y);
+      ln.setAttribute('stroke', '#5B8DEF'); ln.setAttribute('stroke-width', '1.5');
+      ln.setAttribute('stroke-dasharray', '6 6'); ln.setAttribute('opacity', '0.22');
+      _ssSvg.appendChild(ln);
+    }
+  }
+
+  // Measure separators + numbers
+  const startM = r * mpr;
+  const endM   = Math.min(startM + mpr, state.measures);
+  const mCount = endM - startM;
+  for (let m = 0; m <= mCount; m++) {
+    const x = m * mw;
+    const isEdge = m === 0 || m === mCount;
+    const vln = document.createElementNS(NS, 'line');
+    vln.setAttribute('x1', x); vln.setAttribute('y1', rowY + CANVAS_PAD_TOP);
+    vln.setAttribute('x2', x); vln.setAttribute('y2', rowY + ROW_HEIGHT - CANVAS_PAD_BOT);
+    vln.setAttribute('stroke', '#5B8DEF');
+    vln.setAttribute('stroke-width', isEdge ? '2' : '1.2');
+    vln.setAttribute('opacity', isEdge ? '0.55' : '0.28');
+    _ssSvg.appendChild(vln);
+    if (m < mCount) {
+      const txt = document.createElementNS(NS, 'text');
+      txt.setAttribute('x', x + 6); txt.setAttribute('y', rowY + 20);
+      txt.setAttribute('font-size', '12'); txt.setAttribute('font-weight', '700');
+      txt.setAttribute('fill', '#5B8DEF'); txt.setAttribute('opacity', '0.45');
+      txt.setAttribute('font-family', "'Pretendard GOV', sans-serif");
+      txt.setAttribute('pointer-events', 'none');
+      txt.textContent = `${startM + m + 1}`;
+      _ssSvg.appendChild(txt);
+    }
+  }
+
+  // Render blocks for this row (pointer-events off – read-only)
+  rows[_slideIndex].blocks.forEach(block => {
+    const g = makeSvgBlock(block);
+    g.style.pointerEvents = 'none';
+    _ssSvg.appendChild(g);
+  });
+
+  fitSlideshowSvg();
+}
+
+function fitSlideshowSvg() {
+  if (!_ssSvg) return;
+  const wrap = _ssSvg.parentElement;
+  if (!wrap) return;
+  const cw  = getCanvasWidth();
+  const ch  = ROW_HEIGHT;
+  const availW = Math.max(1, wrap.clientWidth  - 8);
+  const availH = Math.max(1, wrap.clientHeight - 8);
+  const s = Math.min(availW / cw, availH / ch, 2.0);
+  _ssSvg.style.width  = Math.round(cw * s) + 'px';
+  _ssSvg.style.height = Math.round(ch * s) + 'px';
+}
+
+function updateSlideshowUI(rows) {
+  if (_ssTitle)   _ssTitle.textContent   = state.songTitle || '너를 위한 악보';
+  if (_ssCounter) _ssCounter.textContent = `${_slideIndex + 1} / ${rows.length}`;
+  if (_ssPrev)    _ssPrev.disabled  = _slideIndex === 0;
+  if (_ssNext)    _ssNext.disabled  = _slideIndex === rows.length - 1;
+  if (_ssDots) {
+    _ssDots.innerHTML = '';
+    if (rows.length > 1) {
+      rows.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'slideshow-dot' + (i === _slideIndex ? ' active' : '');
+        dot.addEventListener('click', () => {
+          if (i === _slideIndex) return;
+          _slideIndex = i;
+          updateSlideshowUI(rows);
+          renderSlideshowSlide(rows);
+        });
+        _ssDots.appendChild(dot);
+      });
+    }
+  }
+}
+
+function openSlideshow() {
+  const panel = currentTab === 'learn' ? 'original' : 'new';
+  if (!state.blocks.some(b => b.panel === panel)) {
+    showToast('슬라이드로 보여줄 내용이 없어요');
+    return;
+  }
+  const rows = getSlideshowRows();
+  _slideIndex = 0;
+  _ssOverlay._rows = rows;
+  _ssOverlay.classList.add('active');
+  updateSlideshowUI(rows);
+  renderSlideshowSlide(rows);
+}
+
+function closeSlideshow() {
+  _ssOverlay.classList.remove('active');
+  _ssOverlay._rows = null;
+}
+
+function goSlide(delta) {
+  const rows = _ssOverlay._rows;
+  if (!rows || rows.length <= 1) return;
+  const next = Math.max(0, Math.min(rows.length - 1, _slideIndex + delta));
+  if (next === _slideIndex) return;
+  _slideIndex = next;
+  updateSlideshowUI(rows);
+  renderSlideshowSlide(rows);
+}
+
+// Slideshow button + close
+document.getElementById('btn-slideshow').addEventListener('click', openSlideshow);
+document.getElementById('ss-close').addEventListener('click', closeSlideshow);
+document.getElementById('ss-prev').addEventListener('click', () => goSlide(-1));
+document.getElementById('ss-next').addEventListener('click', () => goSlide(1));
+
+// Touch/swipe support on the slideshow body
+_ssOverlay.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.slideshow-nav, .slideshow-close, .slideshow-dot')) return;
+  _ssSwipeStartX = e.clientX;
+}, { passive: true });
+_ssOverlay.addEventListener('pointerup', (e) => {
+  if (_ssSwipeStartX === null) return;
+  const dx = e.clientX - _ssSwipeStartX;
+  if (Math.abs(dx) > 50) goSlide(dx < 0 ? 1 : -1);
+  _ssSwipeStartX = null;
+}, { passive: true });
+
+// Refit on window resize
+window.addEventListener('resize', () => {
+  if (_ssOverlay && _ssOverlay.classList.contains('active')) {
+    clearTimeout(_ssFitTimer);
+    _ssFitTimer = setTimeout(() => {
+      if (_ssOverlay._rows) renderSlideshowSlide(_ssOverlay._rows);
+    }, 80);
   }
 });
 
