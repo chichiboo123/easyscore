@@ -449,14 +449,15 @@ svg.score-canvas {
   cursor: text;
   background: var(--surface);
   user-select: none;
-  touch-action: none;
+  /* touch-action is set per-element: block hitboxes get 'none', empty canvas gets default (allows pan) */
 }
 
 /* Block cursor states — explicit grab/grabbing on the block and its hitbox.
-   Use !important to override the SVG's crosshair default. */
+   Use !important to override the SVG's crosshair default.
+   touch-action:none on hitbox so the browser doesn't scroll when dragging blocks. */
 svg.score-canvas .block-group,
 svg.score-canvas .block-group .block-hitbox,
-svg.score-canvas .block-group * { cursor: grab !important; }
+svg.score-canvas .block-group * { cursor: grab !important; touch-action: none; }
 svg.score-canvas .block-group.dragging,
 svg.score-canvas .block-group.dragging .block-hitbox,
 svg.score-canvas .block-group.dragging * { cursor: grabbing !important; }
@@ -1987,8 +1988,28 @@ function setupSvgInteraction(svgEl, panel) {
       e.stopPropagation(); return;
     }
 
-    // Empty canvas → start potential marquee selection
+    // Empty canvas → marquee (mouse) or pan/scroll (touch)
     const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
+
+    if (e.pointerType === 'touch') {
+      // Touch on empty canvas → manually pan the canvas wrapper
+      // Claim the pointer before browser scroll decision is made
+      svgEl.style.touchAction = 'none';
+      const wrapper = svgEl.parentElement;
+      dragState = {
+        type: 'pan',
+        startClientX: e.clientX, startClientY: e.clientY,
+        startScrollLeft: wrapper.scrollLeft,
+        startScrollTop:  wrapper.scrollTop,
+        svgEl, panel,
+        shift: e.shiftKey,
+        preserved: e.shiftKey ? new Set(selectedIds) : new Set()
+      };
+      svgEl.setPointerCapture(e.pointerId);
+      return;
+    }
+
+    // Mouse: start marquee selection
     dragState = {
       type: 'marquee',
       startX: pt.x, startY: pt.y,
@@ -2001,10 +2022,29 @@ function setupSvgInteraction(svgEl, panel) {
 
   svgEl.addEventListener('pointermove', (e) => {
     if (!dragState || dragState.svgEl !== svgEl) return;
+
+    // PAN: touch finger on empty canvas → scroll the wrapper with momentum tracking
+    if (dragState.type === 'pan') {
+      const dx = e.clientX - dragState.startClientX;
+      const dy = e.clientY - dragState.startClientY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasDragged = true;
+      const wrapper = svgEl.parentElement;
+      wrapper.scrollLeft = dragState.startScrollLeft - dx;
+      wrapper.scrollTop  = dragState.startScrollTop  - dy;
+      // Track velocity for momentum scroll (store last two positions)
+      dragState.velX = e.clientX - (dragState.prevClientX ?? e.clientX);
+      dragState.velY = e.clientY - (dragState.prevClientY ?? e.clientY);
+      dragState.prevClientX = e.clientX;
+      dragState.prevClientY = e.clientY;
+      return;
+    }
+
     const pt  = getSvgPoint(svgEl, e.clientX, e.clientY);
     const dxPx = pt.x - dragState.startX;
     const dyPx = pt.y - dragState.startY;
-    if (Math.abs(dxPx) > 2 || Math.abs(dyPx) > 2) hasDragged = true;
+    // Use a larger threshold for touch to prevent accidental drags on tap
+    const dragThreshold = e.pointerType === 'touch' ? 6 : 2;
+    if (Math.abs(dxPx) > dragThreshold || Math.abs(dyPx) > dragThreshold) hasDragged = true;
 
     const scale  = getMeasureScale();
     const mpr    = getMeasuresPerRow();
@@ -2085,6 +2125,28 @@ function setupSvgInteraction(svgEl, panel) {
     document.body.style.cursor = '';
     svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
 
+    if (dragState.type === 'pan') {
+      svgEl.style.touchAction = ''; // restore for next touch
+      if (!hasDragged && !dragState.shift) deselectAll();
+      cancelHistory();
+      // Momentum scroll: continue scrolling with decelerating velocity after finger lift
+      if (hasDragged) {
+        const wrapper = svgEl.parentElement;
+        let vx = -(dragState.velX ?? 0) * 6;
+        let vy = -(dragState.velY ?? 0) * 6;
+        const FRICTION = 0.87;
+        (function momentumStep() {
+          if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) return;
+          wrapper.scrollLeft += vx;
+          wrapper.scrollTop  += vy;
+          vx *= FRICTION; vy *= FRICTION;
+          requestAnimationFrame(momentumStep);
+        })();
+      }
+      dragState = null;
+      return;
+    }
+
     if (dragState.type === 'marquee') {
       removeMarquee(svgEl);
       if (!hasDragged) {
@@ -2109,6 +2171,14 @@ function setupSvgInteraction(svgEl, panel) {
     svgEl.classList.remove('dragging-active');
     document.body.style.cursor = '';
     svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
+
+    if (dragState.type === 'pan') {
+      svgEl.style.touchAction = ''; // restore
+      cancelHistory();
+      dragState = null;
+      return;
+    }
+
     // Restore moved blocks to pre-drag positions
     if (dragState.origPositions) {
       dragState.origPositions.forEach(op => {
