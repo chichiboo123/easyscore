@@ -538,28 +538,23 @@ svg.score-canvas .sel-overlay [data-handle="slide-end"] { cursor: ns-resize !imp
 
 /* ── Text Input Overlay (appears at click position) ── */
 #text-overlay {
-  position: fixed;
-  pointer-events: none;
-  z-index: 200;
   display: none;
-}
-#text-overlay.active {
-  display: block;
-  pointer-events: auto;
-}
-#text-input-bar {
-  background: rgba(255,255,255,0.97);
-  border: 1.5px solid var(--primary-soft);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(91,141,239,0.22);
-  padding: 10px 16px 8px;
-  display: flex;
-  flex-direction: column;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--line);
+  padding: 7px 14px;
   align-items: center;
-  gap: 5px;
-  backdrop-filter: blur(10px);
-  min-width: 240px;
-  max-width: 92vw;
+  box-shadow: 0 2px 8px rgba(42,45,63,0.07);
+  z-index: 10;
+  gap: 12px;
+}
+#text-overlay.active { display: flex; }
+#text-input-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
 }
 #text-input-el {
   border: 2px solid var(--primary);
@@ -1189,6 +1184,14 @@ footer a:hover { color: var(--primary); }
       </button>
     </div>
 
+    <!-- Text Input Dock — docked bar at top of canvas, never floats over work area -->
+    <div id="text-overlay">
+      <div id="text-input-bar">
+        <input type="text" id="text-input-el" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+        <div class="text-input-hint" id="text-input-hint">스페이스로 완성 · Enter로 마침 · Esc로 취소</div>
+      </div>
+    </div>
+
     <!-- LEARN tab: single canvas -->
     <div id="learn-canvas-wrap" class="canvas-wrapper">
       <div class="canvas-empty-hint" id="learn-empty-hint">
@@ -1246,14 +1249,6 @@ footer a:hover { color: var(--primary); }
   <footer>
     <a href="https://litt.ly/chichiboo" target="_blank" rel="noopener">Created by. 교육뮤지컬 꿈꾸는 치수쌤</a>
   </footer>
-</div>
-
-<!-- Text input overlay — fixed bar at top of canvas (Canva-style) -->
-<div id="text-overlay">
-  <div id="text-input-bar">
-    <input type="text" id="text-input-el" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
-    <div class="text-input-hint" id="text-input-hint">스페이스로 완성 · Enter로 마침 · Esc로 취소</div>
-  </div>
 </div>
 
 <!-- Help Modal -->
@@ -1903,7 +1898,7 @@ function setupSvgInteraction(svgEl, panel) {
         const block = state.blocks.find(b => b.id === id);
         if (!block) return;
         if (currentTab === 'write' && block.panel === 'original') return;
-        beginTextInput(svgEl, block, block.panel, undefined, undefined, e.clientX, e.clientY);
+        beginTextInput(svgEl, block, block.panel);
         e.preventDefault(); e.stopPropagation();
       }
     } else {
@@ -1911,7 +1906,7 @@ function setupSvgInteraction(svgEl, panel) {
       if (blockGroup) return;
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
       const { blockX, blockY } = svgToBlockCoords(pt.x, pt.y);
-      beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY, e.clientX, e.clientY);
+      beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY);
       e.preventDefault();
     }
   });
@@ -1992,13 +1987,13 @@ function setupSvgInteraction(svgEl, panel) {
     const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
 
     if (e.pointerType === 'touch') {
-      // Touch on empty canvas → manually pan the canvas wrapper
-      // Claim the pointer before browser scroll decision is made
+      // Touch on empty canvas: wait to see direction before committing to pan or marquee
       svgEl.style.touchAction = 'none';
       const wrapper = svgEl.parentElement;
       dragState = {
-        type: 'pan',
+        type: 'pan-or-marquee',
         startClientX: e.clientX, startClientY: e.clientY,
+        startX: pt.x, startY: pt.y,
         startScrollLeft: wrapper.scrollLeft,
         startScrollTop:  wrapper.scrollTop,
         svgEl, panel,
@@ -2022,6 +2017,16 @@ function setupSvgInteraction(svgEl, panel) {
 
   svgEl.addEventListener('pointermove', (e) => {
     if (!dragState || dragState.svgEl !== svgEl) return;
+
+    // PAN-OR-MARQUEE: direction detection — vertical → pan, horizontal/diagonal → marquee
+    if (dragState.type === 'pan-or-marquee') {
+      const adx = Math.abs(e.clientX - dragState.startClientX);
+      const ady = Math.abs(e.clientY - dragState.startClientY);
+      if (Math.hypot(adx, ady) < 10) return;
+      dragState.type = (ady > adx * 1.3) ? 'pan' : 'marquee';
+      hasDragged = true;
+      // fall through to handle the committed type
+    }
 
     // PAN: touch finger on empty canvas → scroll the wrapper with momentum tracking
     if (dragState.type === 'pan') {
@@ -2125,12 +2130,12 @@ function setupSvgInteraction(svgEl, panel) {
     document.body.style.cursor = '';
     svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
 
-    if (dragState.type === 'pan') {
+    if (dragState.type === 'pan' || dragState.type === 'pan-or-marquee') {
       svgEl.style.touchAction = ''; // restore for next touch
       if (!hasDragged && !dragState.shift) deselectAll();
       cancelHistory();
-      // Momentum scroll: continue scrolling with decelerating velocity after finger lift
-      if (hasDragged) {
+      // Momentum scroll only applies when pan was actually committed
+      if (hasDragged && dragState.type === 'pan') {
         const wrapper = svgEl.parentElement;
         let vx = -(dragState.velX ?? 0) * 6;
         let vy = -(dragState.velY ?? 0) * 6;
@@ -2172,7 +2177,7 @@ function setupSvgInteraction(svgEl, panel) {
     document.body.style.cursor = '';
     svgEl.querySelectorAll('.block-group.dragging').forEach(el => el.classList.remove('dragging'));
 
-    if (dragState.type === 'pan') {
+    if (dragState.type === 'pan' || dragState.type === 'pan-or-marquee') {
       svgEl.style.touchAction = ''; // restore
       cancelHistory();
       dragState = null;
@@ -2301,14 +2306,7 @@ function clearTextPreview() {
   if (_previewTextEl) { _previewTextEl.remove(); _previewTextEl = null; }
 }
 
-/*
- * beginTextInput call signatures:
- *   1. Editing an existing block:   beginTextInput(svgEl, block, panel, undefined, undefined, clientX, clientY)
- *   2. Creating at canvas coords:   beginTextInput(svgEl, null, panel, blockX, blockY, clientX, clientY)
- */
-let _inputAnchor = null; // { clientX, clientY } where input bar should appear
-
-function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY, clientX, clientY) {
+function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
   editingBlock  = blockOrNull || null;
   editingPanel  = panel;
   editingSvg    = svgEl;
@@ -2318,36 +2316,17 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY, clientX
   let fs;
 
   if (editingBlock) {
-    // Always edit at the block's own size
     fs = editingBlock.fontSize || DEFAULT_FONT_SIZE;
     inputOriginX = editingBlock.x;
     inputOriginY = editingBlock.y;
     textInputEl.value = editingBlock.text || '';
     textInputEl.style.width = Math.max(180, getBlockRenderPos(editingBlock).renderWidth) + 'px';
-
-    // If no client coords provided (e.g. keyboard shortcut), anchor at the block's own
-    // SVG position so the input appears near the block, not at the canvas centre.
-    if (clientX == null || clientY == null) {
-      const r = svgEl.getBoundingClientRect();
-      const { svgX, svgY } = getBlockRenderPos(editingBlock);
-      clientX = r.left + svgX;
-      clientY = r.top + svgY;
-    }
   } else {
-    // New blocks always use the default font size
     fs = DEFAULT_FONT_SIZE;
     inputOriginX = newBlockX;
     inputOriginY = newBlockY;
     textInputEl.value = '';
     textInputEl.style.width = '260px';
-
-    // If no client coords (e.g. Tab continuation), anchor at the new position in SVG coords
-    if (clientX == null || clientY == null) {
-      const r = svgEl.getBoundingClientRect();
-      const { svgX, svgY } = getBlockRenderPos({ x: newBlockX, y: newBlockY, width: CANONICAL_MW });
-      clientX = r.left + svgX;
-      clientY = r.top + svgY;
-    }
   }
 
   const inputFont = editingBlock ? (editingBlock.font || font) :
@@ -2357,10 +2336,7 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY, clientX
   textInputEl.style.fontSize   = fs + 'px';
   textInputEl.style.color      = inputColor;
 
-  // Position the input bar near the click point
-  _inputAnchor = { clientX, clientY };
   textOverlay.classList.add('active');
-  positionTextInputAtAnchor();
 
   // Live preview: show text at actual canvas position while typing
   createTextPreview(svgEl, inputOriginX, inputOriginY, fs, inputFont, inputColor);
@@ -2369,41 +2345,7 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY, clientX
     textInputEl.focus();
     if (editingBlock) textInputEl.select();
     autoResizeInput();
-    positionTextInputAtAnchor();
   });
-}
-
-function positionTextInputAtAnchor() {
-  if (!_inputAnchor) return;
-  const bar = document.getElementById('text-input-bar');
-  if (!bar) return;
-  const r  = bar.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const w  = r.width  || 280;
-  const h  = r.height || 70;
-
-  // Default: centre horizontally on click, place bar above click point
-  let left = _inputAnchor.clientX - w / 2;
-  let top  = _inputAnchor.clientY - h - 14;
-
-  // If above isn't enough room, place below
-  if (top < 8) top = _inputAnchor.clientY + 14;
-
-  // Clamp horizontally
-  left = Math.max(8, Math.min(vw - w - 8, left));
-  // Clamp vertically (mobile keyboard handling below)
-  const vv = window.visualViewport;
-  const vvBottom = vv ? (vv.offsetTop + vv.height) : vh;
-  top  = Math.max(8, Math.min(vvBottom - h - 8, top));
-
-  textOverlay.style.left = left + 'px';
-  textOverlay.style.top  = top  + 'px';
-}
-
-function repositionTextInput() {
-  // Keep the bar near the click anchor; on mobile keyboard appearance, ensure it remains visible.
-  positionTextInputAtAnchor();
 }
 
 // Returns canonical units
@@ -2560,13 +2502,6 @@ textInputEl.addEventListener('blur', () => {
   setTimeout(() => { if (!isComposing) commitTextInput(); }, 220);
 });
 
-// Keep input bar visible above mobile keyboard
-window.visualViewport?.addEventListener('resize', () => {
-  if (textOverlay.classList.contains('active')) repositionTextInput();
-});
-window.visualViewport?.addEventListener('scroll', () => {
-  if (textOverlay.classList.contains('active')) repositionTextInput();
-});
 
 /* ══════════════════════════════════════════════════════
    Selection Toolbar Actions
@@ -2651,7 +2586,7 @@ if (selEditBtn) {
     const svgEl = getActiveSvg();
     const r = svgEl.getBoundingClientRect();
     const { svgX, svgY } = getBlockRenderPos(block);
-    beginTextInput(svgEl, block, block.panel, undefined, undefined, r.left + svgX, r.top + svgY);
+    beginTextInput(svgEl, block, block.panel);
   });
 }
 
@@ -3638,14 +3573,6 @@ window.addEventListener('resize', () => {
     renderBlocks();
     if (selectedId !== null) positionSelToolbar();
   }, 60);
-});
-
-// Mobile keyboard resize: keep text input visible above keyboard
-window.visualViewport?.addEventListener('resize', () => {
-  if (textOverlay.classList.contains('active')) repositionTextInput();
-});
-window.visualViewport?.addEventListener('scroll', () => {
-  if (textOverlay.classList.contains('active')) repositionTextInput();
 });
 
 init();
