@@ -633,6 +633,18 @@ input[type="color"] {
 .slide-toggle-btn:hover { color: var(--mint); border-color: var(--mint); }
 .slide-toggle-btn.on { background: var(--mint); color: #fff; border-color: var(--mint); }
 
+/* Edit button (primary action in selection toolbar) */
+.edit-btn-primary {
+  color: var(--primary-dark) !important;
+  border-color: var(--primary) !important;
+  background: var(--primary-soft) !important;
+}
+.edit-btn-primary:hover {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+
 .del-btn {
   display: flex;
   align-items: center;
@@ -836,6 +848,12 @@ footer a:hover { color: var(--primary); }
 .font-select:focus { border-color: var(--primary); }
 
 /* ── Responsive: small screens (tablets/phones) ── */
+@media (max-width: 900px) {
+  /* Larger touch targets for measure +/- buttons */
+  .measure-btn { width: 38px; height: 38px; }
+  .measure-btn .material-symbols-rounded { font-size: 22px; }
+  .measure-count { font-size: 16px; min-width: 32px; }
+}
 @media (max-width: 720px) {
   html, body { font-size: 14px; }
   header { height: 56px; padding: 0 14px; }
@@ -848,7 +866,13 @@ footer a:hover { color: var(--primary); }
   .control-bar { gap: 10px; padding: 10px 14px; }
   .title-input { min-width: 140px; font-size: 14px; }
   input[type="range"] { width: 90px; }
-  #sel-toolbar { padding: 8px 10px; gap: 10px; }
+  #sel-toolbar { padding: 10px 12px; gap: 12px; }
+  /* Bigger touch targets in selection toolbar */
+  .slide-toggle-btn { padding: 10px 14px; min-height: 44px; font-size: 14px; }
+  .del-btn { width: 44px; height: 44px; }
+  .color-swatch { width: 32px; height: 32px; }
+  input[type="color"] { width: 40px; height: 40px; }
+  .font-select { min-width: 120px; font-size: 14px; padding: 8px 10px; }
 }
 @media (max-width: 480px) {
   .logo-title { display: none; }
@@ -1062,9 +1086,9 @@ footer a:hover { color: var(--primary); }
 
     <!-- Language -->
     <select id="lang-select" aria-label="Language">
-      <option value="ko">🇰🇷 KO</option>
-      <option value="en">🇺🇸 EN</option>
-      <option value="ja">🇯🇵 JA</option>
+      <option value="ko">한국어</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
     </select>
   </header>
 
@@ -1174,7 +1198,7 @@ footer a:hover { color: var(--primary); }
         <span data-i18n="slide">슬라이드</span>
       </button>
 
-      <button class="slide-toggle-btn" id="sel-edit-btn" title="텍스트 편집">
+      <button class="slide-toggle-btn edit-btn-primary" id="sel-edit-btn" title="텍스트 편집">
         <span class="material-symbols-rounded">edit</span>
         <span data-i18n="editText">편집</span>
       </button>
@@ -1188,7 +1212,7 @@ footer a:hover { color: var(--primary); }
     <div id="text-overlay">
       <div id="text-input-bar">
         <input type="text" id="text-input-el" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
-        <div class="text-input-hint" id="text-input-hint">스페이스로 완성 · Enter로 마침 · Esc로 취소</div>
+        <div class="text-input-hint" id="text-input-hint">스페이스: 다음 글자 · Enter: 끝내기</div>
       </div>
     </div>
 
@@ -1266,14 +1290,11 @@ footer a:hover { color: var(--primary); }
       </button>
     </div>
     <ul class="help-list" id="help-list">
-      <li><div class="help-num">1</div><div data-i18n="help1">빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바로 다음 칸, Enter로 마침이에요.</div></li>
-      <li><div class="help-num">2</div><div data-i18n="help2">글자 블록을 더블클릭하거나 ✎ 편집 버튼으로 텍스트를 수정해요. 위아래 드래그로 음높이, 양옆 핸들로 길이를 조절해요.</div></li>
-      <li><div class="help-num">3</div><div data-i18n="help3">빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택할 수 있어요. Shift+클릭으로 선택 추가, Ctrl/⌘+A로 전체 선택해요.</div></li>
-      <li><div class="help-num">4</div><div data-i18n="help4">선택한 글자는 Ctrl/⌘+C로 복사, Ctrl/⌘+V로 붙여넣기 할 수 있어요. 키보드 화살표로 미세 이동도 가능해요.</div></li>
-      <li><div class="help-num">5</div><div data-i18n="help5">실수했을 땐 Ctrl/⌘+Z로 되돌리고, Ctrl/⌘+Shift+Z로 다시 실행해요. 헤더의 ↶↷ 버튼도 같은 기능이에요.</div></li>
-      <li><div class="help-num">6</div><div data-i18n="help6">상단 슬라이드 버튼은 미끄러지는 음(글라이드), 마디 +/- 버튼은 곡의 길이를 조절해요.</div></li>
-      <li><div class="help-num">7</div><div data-i18n="help7">'가사 쓰기' 탭에선 '원곡 가사 불러오기' 버튼으로 원곡 가사를 그대로 가져온 뒤 텍스트만 바꿔 쓸 수 있어요.</div></li>
-      <li><div class="help-num">8</div><div data-i18n="help8">💾 저장으로 JSON에 저장하고, 🔗 공유로 이미지·링크를 내보낼 수 있어요.</div></li>
+      <li><div class="help-num">1</div><div data-i18n="help1">빈 곳을 콕! 눌러서 가사를 써요. 스페이스로 다음 글자, Enter로 끝내요.</div></li>
+      <li><div class="help-num">2</div><div data-i18n="help2">글자를 위·아래로 옮기면 음높이가 바뀌어요. 위로 갈수록 높은 소리!</div></li>
+      <li><div class="help-num">3</div><div data-i18n="help3">글자를 누르면 위쪽 메뉴에서 크기·색깔·글꼴을 바꿀 수 있어요. ✎ 버튼을 누르면 글자를 다시 써요.</div></li>
+      <li><div class="help-num">4</div><div data-i18n="help4">실수했을 땐 위쪽의 ↶ 버튼! 다시 하고 싶으면 ↷ 버튼이에요.</div></li>
+      <li><div class="help-num">5</div><div data-i18n="help5">'가사 쓰기' 탭에서는 원곡 가사를 그대로 가져온 뒤, 글자만 바꿔 새 가사를 만들 수 있어요.</div></li>
     </ul>
   </div>
 </div>
@@ -1323,17 +1344,14 @@ const TRANSLATIONS = {
     saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
     helpTitle: '사용 방법', exampleBtn: '예시 보기',
-    help1: '빈 캔버스를 클릭하면 그 자리에 가사를 쓸 수 있어요. 스페이스바로 다음 칸, Enter로 마침이에요.',
-    help2: '글자 블록을 더블클릭하거나 ✎ 편집 버튼으로 텍스트를 수정해요. 위아래 드래그로 음높이, 양옆 핸들로 길이를 조절해요.',
-    help3: '빈 캔버스를 드래그하면 여러 글자를 한꺼번에 선택할 수 있어요. Shift+클릭으로 선택 추가, Ctrl/⌘+A로 전체 선택해요.',
-    help4: '선택한 글자는 Ctrl/⌘+C로 복사, Ctrl/⌘+V로 붙여넣기 할 수 있어요. 키보드 화살표로 미세 이동도 가능해요.',
-    help5: '실수했을 땐 Ctrl/⌘+Z로 되돌리고, Ctrl/⌘+Shift+Z로 다시 실행해요. 헤더의 ↶↷ 버튼도 같은 기능이에요.',
-    help6: '상단 슬라이드 버튼은 미끄러지는 음(글라이드), 마디 +/- 버튼은 곡의 길이를 조절해요.',
-    help7: "'가사 쓰기' 탭에선 '원곡 가사 불러오기' 버튼으로 원곡 가사를 그대로 가져온 뒤 텍스트만 바꿔 쓸 수 있어요.",
-    help8: '💾 저장으로 JSON에 저장하고, 🔗 공유로 이미지·링크를 내보낼 수 있어요.',
+    help1: '빈 곳을 콕! 눌러서 가사를 써요. 스페이스로 다음 글자, Enter로 끝내요.',
+    help2: '글자를 위·아래로 옮기면 음높이가 바뀌어요. 위로 갈수록 높은 소리!',
+    help3: '글자를 누르면 위쪽 메뉴에서 크기·색깔·글꼴을 바꿀 수 있어요. ✎ 버튼을 누르면 글자를 다시 써요.',
+    help4: "실수했을 땐 위쪽의 ↶ 버튼! 다시 하고 싶으면 ↷ 버튼이에요.",
+    help5: "'가사 쓰기' 탭에서는 원곡 가사를 그대로 가져온 뒤, 글자만 바꿔 새 가사를 만들 수 있어요.",
     originalScore: '원곡 악보', newLyrics: '새 가사',
     fontSize: '크기', color: '색', slide: '슬라이드', editText: '편집',
-    inputHint: '스페이스로 완성 · Enter로 마침 · Esc로 취소',
+    inputHint: '스페이스: 다음 글자 · Enter: 끝내기',
     loadOriginal: '원곡 가사 불러오기',
     loadOriginalTitle: '원곡 가사를 새 가사로 복사',
     confirmOverwriteNew: '새 가사가 이미 있습니다. 덮어쓸까요?',
@@ -1357,17 +1375,14 @@ const TRANSLATIONS = {
     saveJson: 'Save as JSON', loadJson: 'Load JSON',
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
     helpTitle: 'How to use', exampleBtn: 'Show example',
-    help1: 'Click the canvas to type lyrics at that spot. Space moves to the next position, Enter finishes.',
-    help2: 'Double-click a block or use the ✎ Edit button to change its text. Drag a block up/down for pitch; drag side handles to stretch for held notes.',
-    help3: 'Drag on empty canvas to select multiple blocks at once. Shift+click to add to the selection, Ctrl/⌘+A to select all.',
-    help4: 'Copy selected blocks with Ctrl/⌘+C, paste with Ctrl/⌘+V. Use arrow keys (with Shift for larger steps) to nudge selection.',
-    help5: 'Undo with Ctrl/⌘+Z and redo with Ctrl/⌘+Shift+Z. The ↶↷ buttons in the header do the same.',
-    help6: 'The slide toggle draws a gliding note as a curve. Use the measure +/- buttons to set song length.',
-    help7: 'In the Write tab, "Copy original lyrics" duplicates the original score into the new-lyrics panel so you only need to change the text.',
-    help8: 'Use 💾 Save for JSON, and 🔗 Share for image export or a shareable link.',
+    help1: 'Tap an empty spot to type lyrics. Press Space for the next word, Enter to finish.',
+    help2: 'Drag a word up or down to change its pitch — higher means a higher sound.',
+    help3: 'Tap a word to use the top toolbar for size, color, and font. Use the ✎ Edit button to rewrite the text.',
+    help4: 'Made a mistake? Tap the ↶ button to undo, ↷ to redo.',
+    help5: 'In the Write tab, copy the original lyrics and just swap the words to make a new version.',
     originalScore: 'Original', newLyrics: 'New lyrics',
     fontSize: 'Size', color: 'Color', slide: 'Slide', editText: 'Edit',
-    inputHint: 'Space to confirm · Enter to finish · Esc to cancel',
+    inputHint: 'Space: next · Enter: done',
     loadOriginal: 'Copy original lyrics',
     loadOriginalTitle: 'Copy original lyrics to the new-lyrics panel',
     confirmOverwriteNew: 'The new-lyrics panel already has blocks. Overwrite them?',
@@ -1391,17 +1406,14 @@ const TRANSLATIONS = {
     saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
     helpTitle: '使い方', exampleBtn: '例を見る',
-    help1: 'キャンバスをクリックするとその場所に歌詞を入力できます。スペースで次の位置、Enterで終了します。',
-    help2: 'ブロックをダブルクリック、または ✎ 編集ボタンでテキストを修正できます。上下ドラッグで音の高さ、左右ハンドルで長さを調整します。',
-    help3: '空白部分をドラッグすると複数のブロックをまとめて選択できます。Shift+クリックで追加、Ctrl/⌘+A で全選択。',
-    help4: '選択したブロックは Ctrl/⌘+C でコピー、Ctrl/⌘+V で貼り付け。矢印キー(Shiftで大きく)で微調整できます。',
-    help5: '間違えたら Ctrl/⌘+Z で元に戻し、Ctrl/⌘+Shift+Z でやり直し。ヘッダーの ↶↷ ボタンも同じです。',
-    help6: 'スライドボタンはなめらかな音(グライド)、小節 +/- ボタンは曲の長さを調整します。',
-    help7: '「歌詞を書く」タブでは「原曲歌詞を読込」ボタンで原曲を複製し、テキストだけ書き換えられます。',
-    help8: '💾 保存で JSON、🔗 共有で画像・リンク出力ができます。',
+    help1: '空いている所をタップして歌詞を入力。スペースで次の文字、Enterで終了。',
+    help2: '文字を上下にドラッグすると音の高さが変わります。上ほど高い音！',
+    help3: '文字をタップすると、上のバーで大きさ・色・フォントを変えられます。✎ ボタンで文字を編集。',
+    help4: '間違えたら上の ↶ ボタン、やり直したいときは ↷ ボタン。',
+    help5: '「歌詞を書く」タブでは原曲歌詞をコピーして、文字だけ書き換えて新しい歌詞が作れます。',
     originalScore: '原曲', newLyrics: '新しい歌詞',
     fontSize: 'サイズ', color: '色', slide: 'スライド', editText: '編集',
-    inputHint: 'スペースで確定・Enterで終了・Escで取消',
+    inputHint: 'スペース: 次の文字 · Enter: 終了',
     loadOriginal: '原曲歌詞を読込',
     loadOriginalTitle: '原曲歌詞を新しい歌詞欄に複製',
     confirmOverwriteNew: '新しい歌詞欄に既に内容があります。上書きしますか？',
@@ -1464,13 +1476,13 @@ const CANONICAL_MW   = 200;   // canonical units per measure (storage)
 let ROW_HEIGHT       = 300;   // px per row in the SVG (can toggle)
 const CANVAS_PAD_TOP = 28;
 const CANVAS_PAD_BOT = 20;
-const MPR_PC         = 8;     // measures per row on desktop
-const MPR_TABLET     = 4;     // measures per row on tablet
+const MPR_PC         = 4;     // measures per row on desktop
+const MPR_MOBILE     = 2;     // measures per row on phone/small tablet
 const BREAK_PX       = 900;   // viewport width breakpoint
 const DEFAULT_FONT_SIZE = 32; // default size for newly created text blocks
 
 function getMeasuresPerRow() {
-  return window.innerWidth >= BREAK_PX ? MPR_PC : MPR_TABLET;
+  return window.innerWidth >= BREAK_PX ? MPR_PC : MPR_MOBILE;
 }
 function getMeasureWidth() {
   const mpr = getMeasuresPerRow();
@@ -1683,9 +1695,10 @@ function makeSvgBlock(block) {
     textEl.appendChild(tp); g.appendChild(textEl);
 
     const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    const bboxTop = dy >= 0 ? y - fs * 0.2 : y + dy - fs * 0.2;
-    bbox.setAttribute('x', x); bbox.setAttribute('y', bboxTop);
-    bbox.setAttribute('width', rw); bbox.setAttribute('height', fs + Math.abs(dy));
+    const hitPad = 8; // extra touch padding around block
+    const bboxTop = (dy >= 0 ? y - fs * 0.2 : y + dy - fs * 0.2) - hitPad;
+    bbox.setAttribute('x', x - hitPad); bbox.setAttribute('y', bboxTop);
+    bbox.setAttribute('width', rw + hitPad * 2); bbox.setAttribute('height', fs + Math.abs(dy) + hitPad * 2);
     bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
     bbox.setAttribute('pointer-events','all');
     g.appendChild(bbox);
@@ -1699,8 +1712,9 @@ function makeSvgBlock(block) {
     g.appendChild(textEl);
 
     const bbox = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    bbox.setAttribute('x', x); bbox.setAttribute('y', y - fs);
-    bbox.setAttribute('width', rw); bbox.setAttribute('height', fs * 1.3);
+    const hitPad = 8; // extra touch padding around block
+    bbox.setAttribute('x', x - hitPad); bbox.setAttribute('y', y - fs - hitPad);
+    bbox.setAttribute('width', rw + hitPad * 2); bbox.setAttribute('height', fs * 1.3 + hitPad * 2);
     bbox.setAttribute('fill','transparent'); bbox.setAttribute('class','block-hitbox');
     bbox.setAttribute('pointer-events','all');
     g.appendChild(bbox);
@@ -1746,7 +1760,9 @@ function makeHandle(cx, cy, side) {
   const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
   c.setAttribute('cx', cx);
   c.setAttribute('cy', cy);
-  c.setAttribute('r','10');
+  // Bigger touch-friendly handles, especially on phones/tablets
+  const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  c.setAttribute('r', isTouch ? '14' : '11');
   c.setAttribute('fill','#5B8DEF');
   c.setAttribute('stroke','#fff');
   c.setAttribute('stroke-width','2.5');
