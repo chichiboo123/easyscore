@@ -640,9 +640,10 @@ svg.score-canvas .sel-overlay [data-handle="slide-end"] { cursor: ns-resize !imp
 @keyframes previewBlink { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.4; } }
 .preview-blink { animation: previewBlink 1.1s ease-in-out infinite; }
 
-/* Floating ✎ edit button on the selected block */
-.edit-fab circle { transition: fill 0.12s; }
-.edit-fab:hover circle { fill: var(--primary-dark); }
+/* Floating action buttons (✎ edit / ✕ delete) on the selected block */
+.fab-btn circle { transition: fill 0.12s; }
+.fab-edit:hover circle { fill: var(--primary-dark); }
+.fab-del:hover  circle { fill: #e07d92; }
 
 /* ── Selection Toolbar (top of canvas bar, Canva-style) ── */
 #sel-toolbar {
@@ -1460,7 +1461,8 @@ const TRANSLATIONS = {
     undoTitle: '실행 취소 (Ctrl+Z)', redoTitle: '다시 실행 (Ctrl+Shift+Z)',
     clearAll: '모두 지우기', clearAllTitle: '캔버스를 모두 지우고 초기화합니다',
     confirmClearAll: '캔버스의 모든 내용을 지울까요? 되돌릴 수 없어요.',
-    toastCleared: '캔버스가 초기화됐어요.'
+    toastCleared: '캔버스가 초기화됐어요.',
+    toastDeleted: '글자를 지웠어요 (↶ 로 되돌리기)'
   },
   en: {
     appTitle: 'Easy Score',
@@ -1491,6 +1493,7 @@ const TRANSLATIONS = {
     clearAll: 'Clear all', clearAllTitle: 'Clear canvas and reset',
     confirmClearAll: 'Clear everything on the canvas? This cannot be undone.',
     toastCleared: 'Canvas cleared.',
+    toastDeleted: 'Deleted (↶ to undo)',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
     toastExample: 'Example loaded!'
@@ -1524,6 +1527,7 @@ const TRANSLATIONS = {
     clearAll: '全て消去', clearAllTitle: 'キャンバスを初期化します',
     confirmClearAll: 'キャンバスの内容を全て消去しますか？元に戻せません。',
     toastCleared: 'キャンバスを初期化しました。',
+    toastDeleted: '文字を削除しました (↶ で元に戻す)',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
     toastExample: 'サンプルを読み込みました！'
@@ -1850,30 +1854,45 @@ function makeSelectionOverlay(block, svgEl, isMulti) {
     if (block.slide) {
       g.appendChild(makeHandle(svgX + rw, svgY + dy, 'slide-end'));
     }
-    // Floating ✎ edit button at the block's top-right — one tap to rewrite text
+    // Floating buttons at the block's top corners — one tap to edit (✎) or delete (✕)
     const editable = !(currentTab === 'write' && block.panel === 'original');
     if (editable) {
-      const ex = Math.min(getCanvasWidth() - 18, rx + rw + 2);
-      const ey = Math.max(18, ry - 14);
-      g.appendChild(makeEditButton(ex, ey, block.id));
+      const fr = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 17 : 15;
+      const ey = Math.max(fr + 1, ry - 14);
+      let ex = rx + rw + 2;   // edit: top-right
+      let dx = rx - 2;        // delete: top-left
+      const minGap = 2 * fr + 8;
+      if (ex - dx < minGap) { const mid = (ex + dx) / 2; ex = mid + minGap / 2; dx = mid - minGap / 2; }
+      ex = Math.min(getCanvasWidth() - fr - 2, ex);
+      dx = Math.max(fr + 2, dx);
+      g.appendChild(makeFab(ex, ey, block.id, 'edit'));
+      g.appendChild(makeFab(dx, ey, block.id, 'delete'));
     }
   }
   svgEl.appendChild(g);
   return g;
 }
 
-function makeEditButton(cx, cy, blockId) {
+function makeFab(cx, cy, blockId, kind) {
   const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   const r = isTouch ? 17 : 15;
+  const isDel = kind === 'delete';
+  const attr  = isDel ? 'data-del-btn' : 'data-edit-btn';
+  const fill  = isDel ? '#F4A6B7' : '#5B8DEF';
+  const glyph = isDel ? '✕' : '✎';
+  const label = isDel ? '글자 삭제' : '글자 편집';
+
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.setAttribute('class', 'edit-fab');
-  g.setAttribute('data-edit-btn', blockId);
+  g.setAttribute('class', 'fab-btn ' + (isDel ? 'fab-del' : 'fab-edit'));
+  g.setAttribute(attr, blockId);
   g.setAttribute('cursor', 'pointer');
+  g.setAttribute('role', 'button');
+  g.setAttribute('aria-label', label);
 
   const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
   c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
-  c.setAttribute('fill', '#5B8DEF'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2.5');
-  c.setAttribute('data-edit-btn', blockId);
+  c.setAttribute('fill', fill); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2.5');
+  c.setAttribute(attr, blockId);
   c.setAttribute('pointer-events', 'all');
   g.appendChild(c);
 
@@ -1881,10 +1900,10 @@ function makeEditButton(cx, cy, blockId) {
   tx.setAttribute('x', cx); tx.setAttribute('y', cy + 1);
   tx.setAttribute('text-anchor', 'middle');
   tx.setAttribute('dominant-baseline', 'central');
-  tx.setAttribute('font-size', r * 1.05);
+  tx.setAttribute('font-size', isDel ? r * 0.95 : r * 1.05);
   tx.setAttribute('fill', '#fff');
   tx.setAttribute('pointer-events', 'none');
-  tx.textContent = '✎';
+  tx.textContent = glyph;
   g.appendChild(tx);
   return g;
 }
@@ -2072,6 +2091,22 @@ function setupSvgInteraction(svgEl, panel) {
       const id = parseInt(editFab.getAttribute('data-edit-btn'));
       const block = state.blocks.find(b => b.id === id);
       if (block) beginTextInput(svgEl, block, block.panel);
+      e.preventDefault(); e.stopPropagation();
+      return;
+    }
+
+    // Floating ✕ delete button → remove the block (undo available)
+    const delFab = e.target.closest('[data-del-btn]');
+    if (delFab) {
+      const id = parseInt(delFab.getAttribute('data-del-btn'));
+      if (state.blocks.some(b => b.id === id)) {
+        pushHistory();
+        state.blocks = state.blocks.filter(b => b.id !== id);
+        deselectAll();
+        renderBlocks();
+        updateEmptyHint();
+        showToast(t('toastDeleted'));
+      }
       e.preventDefault(); e.stopPropagation();
       return;
     }
