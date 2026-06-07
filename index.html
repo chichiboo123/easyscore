@@ -172,6 +172,7 @@ header {
 .icon-btn .material-symbols-rounded { font-size: 24px; }
 .icon-btn:disabled { color: rgba(42,45,63,0.25); cursor: not-allowed; }
 .icon-btn:disabled:hover { background: transparent; color: rgba(42,45,63,0.25); }
+.icon-btn-danger:hover { background: #fdecea; color: #E05252; }
 
 /* ── Dropdown ── */
 .dropdown-wrap { position: relative; }
@@ -819,6 +820,23 @@ footer a:hover { color: var(--primary); }
   transition: background 0.15s;
 }
 .modal-close:hover { background: var(--primary-soft); color: var(--primary); }
+/* Confirm-modal action buttons */
+.confirm-btn {
+  padding: 11px 22px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+}
+.confirm-btn:active { transform: scale(0.96); }
+.confirm-btn-cancel { background: var(--bg); color: var(--ink-soft); border-color: var(--line); }
+.confirm-btn-cancel:hover { background: var(--surface-soft); color: var(--ink); }
+.confirm-btn-danger { background: #E05252; color: #fff; }
+.confirm-btn-danger:hover { background: #c93f3f; }
+
 .help-list { list-style: none; }
 .help-list li {
   display: flex;
@@ -1157,6 +1175,11 @@ footer a:hover { color: var(--primary); }
       <span class="material-symbols-rounded">slideshow</span>
     </button>
 
+    <!-- Clear all / reset -->
+    <button class="icon-btn icon-btn-danger" id="btn-clear-all" title="모두 지우기" data-i18n-title="clearAllTitle">
+      <span class="material-symbols-rounded">delete_sweep</span>
+    </button>
+
     <!-- Language -->
     <select id="lang-select" aria-label="Language">
       <option value="ko">한국어</option>
@@ -1217,15 +1240,15 @@ footer a:hover { color: var(--primary); }
 
     <!-- Row height toggle -->
     <div class="ctrl-group">
-      <span class="ctrl-label">줄 높이</span>
+      <span class="ctrl-label" data-i18n="rowHeight">줄 높이</span>
       <div class="toggle-group">
-        <button class="toggle-btn" id="height-narrow" title="좁게">
+        <button class="toggle-btn" id="height-narrow" data-i18n-title="rowNarrow" title="좁게">
           <span class="material-symbols-rounded">density_small</span>
-          <span>좁게</span>
+          <span data-i18n="rowNarrow">좁게</span>
         </button>
-        <button class="toggle-btn active" id="height-normal" title="현재">
+        <button class="toggle-btn active" id="height-normal" data-i18n-title="rowNormal" title="보통">
           <span class="material-symbols-rounded">density_medium</span>
-          <span>현재</span>
+          <span data-i18n="rowNormal">보통</span>
         </button>
       </div>
     </div>
@@ -1393,6 +1416,21 @@ footer a:hover { color: var(--primary); }
   </div>
 </div>
 
+<!-- Confirm modal (clear all) -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title" style="margin-bottom:14px;">
+      <span class="material-symbols-rounded" style="color:#E05252;">delete_sweep</span>
+      <span data-i18n="clearAll">모두 지우기</span>
+    </div>
+    <p id="confirm-msg" data-i18n="confirmClearAll" style="font-size:15px; line-height:1.6; color:var(--ink-soft); margin-bottom:24px;">캔버스의 모든 내용을 지울까요? 되돌릴 수 없어요.</p>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button class="confirm-btn confirm-btn-cancel" id="confirm-cancel" data-i18n="inputCancel">취소</button>
+      <button class="confirm-btn confirm-btn-danger" id="confirm-ok" data-i18n="clearAll">모두 지우기</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -1434,6 +1472,7 @@ const TRANSLATIONS = {
     appTitle: '너를 위한 악보',
     tabLearn: '노래 익히기', tabWrite: '가사 쓰기',
     spaceMode: '배경', guide: '줄 있음', free: '줄 없음', lines: '줄 수', measures: '마디',
+    rowHeight: '줄 높이', rowNarrow: '좁게', rowNormal: '보통',
     songTitlePlaceholder: '노래 제목을 입력하세요',
     saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
@@ -1468,6 +1507,7 @@ const TRANSLATIONS = {
     appTitle: 'Easy Score',
     tabLearn: 'Learn', tabWrite: 'Write',
     spaceMode: 'Space', guide: 'Guide', free: 'Free', lines: 'Lines', measures: 'Measures',
+    rowHeight: 'Row height', rowNarrow: 'Narrow', rowNormal: 'Normal',
     songTitlePlaceholder: 'Song title',
     saveJson: 'Save as JSON', loadJson: 'Load JSON',
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
@@ -1502,6 +1542,7 @@ const TRANSLATIONS = {
     appTitle: 'Easy Score',
     tabLearn: '歌を学ぶ', tabWrite: '歌詞を書く',
     spaceMode: '空間', guide: 'ガイド', free: 'フリー', lines: '線', measures: '小節',
+    rowHeight: '行の高さ', rowNarrow: '狭い', rowNormal: '標準',
     songTitlePlaceholder: '曲のタイトル',
     saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
@@ -3183,28 +3224,28 @@ function loadExample() {
   state.lineCount = 3;
   state.measures  = 4;
   nextId = 1;
-  const C = { ink: '#2A2D3F', blue: '#5B8DEF', mint: '#7DD3B8', peach: '#FFB088', rose: '#F4A6B7' };
-  const M = CANONICAL_MW; // 200
-  const RH = 300; // original ROW_HEIGHT used to create example data
-  const FS = 30;
-  // y positions within each row: lower number = higher pitch (y=0 is top)
+  const ink = '#2A2D3F';
+  // x = absolute canonical units (200 per measure); y = fraction of row height
   state.blocks = [
-    // 마디 1 — 지나간 것은 지나간 대로
-    { id: nextId++, text: '지나간', x: M*0+6,   y: 215/RH, width: 50, fontSize: FS, slide: true,  slideDy: -34, color: C.blue,  panel: 'original' },
-    { id: nextId++, text: '것은',   x: M*0+62,  y: 120/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '지나간', x: M*0+104, y: 165/RH, width: 50, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '대로',   x: M*0+158, y: 185/RH, width: 38, fontSize: FS, slide: true,  slideDy: 34,  color: C.peach, panel: 'original' },
-    // 마디 2 — 그런 의미가 있죠
-    { id: nextId++, text: '그런',   x: M*1+10,  y: 150/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '의미',   x: M*1+56,  y: 150/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '가',     x: M*1+102, y: 150/RH, width: 20, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '있',     x: M*1+128, y: 160/RH, width: 20, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '죠',     x: M*1+156, y: 215/RH, width: 20, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    // 마디 3 — 떠난 이에게 노래하세요
-    { id: nextId++, text: '떠난이', x: M*2+6,   y: 170/RH, width: 55, fontSize: FS, slide: true,  slideDy: -34, color: C.mint,  panel: 'original' },
-    { id: nextId++, text: '에게',   x: M*2+72,  y: 120/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '노래',   x: M*2+116, y: 130/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '하세요', x: M*2+158, y: 190/RH, width: 40, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '지나간',   x: 17.92,  y: 0.5580, width: 34,    fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '것은',     x: 58.58,  y: 0.4300, width: 23.92, fontSize: 32, slide: true,  slideDy: -26, color: ink, panel: 'original' },
+    { id: nextId++, text: '지나간',   x: 97.08,  y: 0.4533, width: 34,    fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '대로',     x: 138.58, y: 0.5233, width: 28.5,  fontSize: 32, slide: true,  slideDy: 37,  color: ink, panel: 'original' },
+    { id: nextId++, text: '그런의미', x: 252.92, y: 0.4333, width: 45.33, fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '가',       x: 304.08, y: 0.4967, width: 12.5,  fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '있죠',     x: 325.75, y: 0.5833, width: 22.67, fontSize: 32, slide: true,  slideDy: 27,  color: ink, panel: 'original' },
+    { id: nextId++, text: '떠난이',   x: 422.92, y: 0.5167, width: 34,    fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '에',       x: 466.08, y: 0.4267, width: 12.5,  fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '게',       x: 488.17, y: 0.3333, width: 12.5,  fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '노래',     x: 511.50, y: 0.3800, width: 22.67, fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '하세요',   x: 539.17, y: 0.4600, width: 34,    fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '후회',     x: 614.58, y: 0.5700, width: 22.67, fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '없이',     x: 643.50, y: 0.4733, width: 22.67, fontSize: 32, slide: true,  slideDy: -30, color: ink, panel: 'original' },
+    { id: nextId++, text: '사랑',     x: 669.50, y: 0.5167, width: 22.67, fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '했',       x: 695.92, y: 0.4633, width: 12.5,  fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '노라',     x: 713.83, y: 0.3767, width: 22.67, fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '말',       x: 744.42, y: 0.3667, width: 12.5,  fontSize: 32, slide: false, color: ink, panel: 'original' },
+    { id: nextId++, text: '해요',     x: 761.08, y: 0.4913, width: 22.67, fontSize: 32, slide: false, color: ink, panel: 'original' },
   ];
   document.getElementById('song-title').value = state.songTitle;
   document.getElementById('mode-guide').classList.add('active');
@@ -3274,17 +3315,14 @@ function loadFromLocalStorage() {
     return true;
   } catch(e) { return false; }
 }
-function clearAllAndReset() {
-  if (!confirm(t('confirmClearAll'))) return;
+function doClearAll() {
+  pushHistory(); // keep it undoable as an extra safety net beyond the confirm popup
   state.blocks = [];
   state.songTitle = '';
   state.measures = 4;
   state.lineCount = 3;
   state.spaceMode = 'guide';
   nextId = 1;
-  try { localStorage.removeItem(LS_KEY); } catch(e) {}
-  historyStack.length = 0;
-  redoStack.length = 0;
   updateHistoryButtons();
   document.getElementById('song-title').value = '';
   lineCountSlider.value = 3;
@@ -3301,10 +3339,19 @@ function clearAllAndReset() {
   showToast(t('toastCleared'));
 }
 
+/* Clear-all confirmation popup (custom, kid-friendly — replaces native confirm) */
+const confirmModal = document.getElementById('confirm-modal');
+function requestClearAll() { confirmModal.classList.add('open'); }
+function closeConfirm()    { confirmModal.classList.remove('open'); }
+document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
+document.getElementById('confirm-ok').addEventListener('click', () => { closeConfirm(); doClearAll(); });
+confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) closeConfirm(); });
+
 document.getElementById('menu-clear-all').addEventListener('click', () => {
   closeAllDropdowns();
-  clearAllAndReset();
+  requestClearAll();
 });
+document.getElementById('btn-clear-all').addEventListener('click', requestClearAll);
 
 function snapshotState() {
   return JSON.stringify({
@@ -3485,6 +3532,18 @@ document.getElementById('btn-load-original').addEventListener('click', loadOrigi
    Keyboard shortcuts
 ══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
+  // Confirm popup takes priority: Esc cancels, Enter confirms
+  if (confirmModal && confirmModal.classList.contains('open')) {
+    if (e.key === 'Escape')     { closeConfirm(); e.preventDefault(); }
+    else if (e.key === 'Enter') { closeConfirm(); doClearAll(); e.preventDefault(); }
+    return;
+  }
+  // Help modal: Esc closes it
+  if (helpModal && helpModal.classList.contains('open')) {
+    if (e.key === 'Escape') { helpModal.classList.remove('open'); e.preventDefault(); }
+    return;
+  }
+
   // Slideshow keyboard navigation takes priority
   if (_ssOverlay && _ssOverlay.classList.contains('active')) {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')    { goSlide(-1); e.preventDefault(); return; }
