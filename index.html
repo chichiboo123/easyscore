@@ -1854,19 +1854,22 @@ function makeSelectionOverlay(block, svgEl, isMulti) {
     if (block.slide) {
       g.appendChild(makeHandle(svgX + rw, svgY + dy, 'slide-end'));
     }
-    // Floating buttons at the block's top corners — one tap to edit (✎) or delete (✕)
+    // Action buttons (✎ edit / ✕ delete) — a small pair floating clearly ABOVE
+    // the block so they never crowd the text or the side resize handles.
     const editable = !(currentTab === 'write' && block.panel === 'original');
     if (editable) {
-      const fr = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 17 : 15;
-      const ey = Math.max(fr + 1, ry - 14);
-      let ex = rx + rw + 2;   // edit: top-right
-      let dx = rx - 2;        // delete: top-left
-      const minGap = 2 * fr + 8;
-      if (ex - dx < minGap) { const mid = (ex + dx) / 2; ex = mid + minGap / 2; dx = mid - minGap / 2; }
-      ex = Math.min(getCanvasWidth() - fr - 2, ex);
-      dx = Math.max(fr + 2, dx);
-      g.appendChild(makeFab(ex, ey, block.id, 'edit'));
-      g.appendChild(makeFab(dx, ey, block.id, 'delete'));
+      const fr = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 15 : 13;
+      const cxMid = rx + rw / 2;
+      const halfGap = fr + 6;                 // horizontal half-distance between the two buttons
+      let ay = ry - fr - 16;                  // float above the block, with clear breathing room
+      if (ay < fr + 2) ay = ry + rh + fr + 16; // not enough room on top → drop below the block
+      let cxDel  = cxMid - halfGap;           // delete on the left
+      let cxEdit = cxMid + halfGap;           // edit on the right
+      const W = getCanvasWidth();
+      if (cxDel  < fr + 2)     { cxDel = fr + 2;     cxEdit = cxDel + 2 * halfGap; }
+      if (cxEdit > W - fr - 2) { cxEdit = W - fr - 2; cxDel = cxEdit - 2 * halfGap; }
+      g.appendChild(makeFab(cxDel,  ay, block.id, 'delete'));
+      g.appendChild(makeFab(cxEdit, ay, block.id, 'edit'));
     }
   }
   svgEl.appendChild(g);
@@ -1875,7 +1878,7 @@ function makeSelectionOverlay(block, svgEl, isMulti) {
 
 function makeFab(cx, cy, blockId, kind) {
   const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-  const r = isTouch ? 17 : 15;
+  const r = isTouch ? 15 : 13;
   const isDel = kind === 'delete';
   const attr  = isDel ? 'data-del-btn' : 'data-edit-btn';
   const fill  = isDel ? '#F4A6B7' : '#5B8DEF';
@@ -2545,6 +2548,10 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
 
   textOverlay.classList.add('active');
 
+  // While editing, hide the selection handles/buttons so they don't clutter
+  // the block being typed into. They are redrawn after the edit is committed.
+  document.querySelectorAll('.sel-overlay').forEach(el => el.remove());
+
   // Live preview: show text at actual canvas position while typing
   createTextPreview(svgEl, inputOriginX, inputOriginY, fs, inputFont, inputColor);
 
@@ -3171,24 +3178,33 @@ helpModal.addEventListener('click', (e) => {
    Example loader — "Twinkle Twinkle Little Star" preview
 ══════════════════════════════════════════════════════ */
 function loadExample() {
-  state.songTitle = '반짝반짝 작은 별';
+  state.songTitle = '걱정 말아요 그대';
   state.spaceMode = 'guide';
   state.lineCount = 3;
-  state.measures  = 8;
+  state.measures  = 4;
   nextId = 1;
   const C = { ink: '#2A2D3F', blue: '#5B8DEF', mint: '#7DD3B8', peach: '#FFB088', rose: '#F4A6B7' };
   const M = CANONICAL_MW; // 200
   const RH = 300; // original ROW_HEIGHT used to create example data
+  const FS = 30;
   // y positions within each row: lower number = higher pitch (y=0 is top)
   state.blocks = [
-    { id: nextId++, text: '반짝', x: M*0+15, y: 220/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '반짝', x: M*1+15, y: 190/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '작은', x: M*2+15, y: 155/RH, width: 140, fontSize: 36, slide: false, color: C.blue,  panel: 'original' },
-    { id: nextId++, text: '별',   x: M*3+30, y: 115/RH, width: 110, fontSize: 40, slide: false, color: C.peach, panel: 'original' },
-    { id: nextId++, text: '아름', x: M*4+15, y: 100/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '답게', x: M*5+15, y: 115/RH, width: 155, fontSize: 36, slide: false, color: C.ink,   panel: 'original' },
-    { id: nextId++, text: '비치', x: M*6+15, y: 155/RH, width: 155, fontSize: 36, slide: false, color: C.mint,  panel: 'original' },
-    { id: nextId++, text: '네',   x: M*7+15, y: 220/RH, width: 230, fontSize: 36, slide: true,  color: C.rose,  panel: 'original' },
+    // 마디 1 — 지나간 것은 지나간 대로
+    { id: nextId++, text: '지나간', x: M*0+6,   y: 215/RH, width: 50, fontSize: FS, slide: true,  slideDy: -34, color: C.blue,  panel: 'original' },
+    { id: nextId++, text: '것은',   x: M*0+62,  y: 120/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '지나간', x: M*0+104, y: 165/RH, width: 50, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '대로',   x: M*0+158, y: 185/RH, width: 38, fontSize: FS, slide: true,  slideDy: 34,  color: C.peach, panel: 'original' },
+    // 마디 2 — 그런 의미가 있죠
+    { id: nextId++, text: '그런',   x: M*1+10,  y: 150/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '의미',   x: M*1+56,  y: 150/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '가',     x: M*1+102, y: 150/RH, width: 20, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '있',     x: M*1+128, y: 160/RH, width: 20, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '죠',     x: M*1+156, y: 215/RH, width: 20, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    // 마디 3 — 떠난 이에게 노래하세요
+    { id: nextId++, text: '떠난이', x: M*2+6,   y: 170/RH, width: 55, fontSize: FS, slide: true,  slideDy: -34, color: C.mint,  panel: 'original' },
+    { id: nextId++, text: '에게',   x: M*2+72,  y: 120/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '노래',   x: M*2+116, y: 130/RH, width: 38, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
+    { id: nextId++, text: '하세요', x: M*2+158, y: 190/RH, width: 40, fontSize: FS, slide: false, color: C.ink,   panel: 'original' },
   ];
   document.getElementById('song-title').value = state.songTitle;
   document.getElementById('mode-guide').classList.add('active');
