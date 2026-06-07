@@ -574,11 +574,76 @@ svg.score-canvas .sel-overlay [data-handle="slide-end"] { cursor: ns-resize !imp
   box-shadow: inset 0 0 0 2px var(--primary-soft);
 }
 .text-input-hint {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--ink-soft);
   white-space: nowrap;
 }
+
+/* Leading pencil icon + big touch action buttons in the text input dock (kid-friendly) */
+.text-input-lead {
+  font-size: 26px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.text-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ti-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 46px;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.1s;
+}
+.ti-btn .material-symbols-rounded { font-size: 20px; }
+.ti-btn:active { transform: scale(0.95); }
+.ti-next  { color: var(--primary-dark); border-color: var(--primary); background: var(--primary-soft); }
+.ti-next:hover  { background: var(--primary); color: #fff; }
+.ti-done  { color: #fff; border-color: var(--mint); background: var(--mint); }
+.ti-done:hover  { filter: brightness(0.94); }
+.ti-cancel:hover { border-color: var(--rose); color: var(--rose); }
+
+/* Size stepper buttons (A- / A+) — easier than the thin slider for small fingers */
+.size-step-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--primary-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+}
+.size-step-btn:hover { background: var(--primary-soft); border-color: var(--primary); }
+.size-step-btn:active { transform: scale(0.92); }
+.size-step-btn .material-symbols-rounded { font-size: 22px; }
+
+/* Blinking caret so kids notice where their text will appear on the canvas */
+@keyframes previewBlink { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.4; } }
+.preview-blink { animation: previewBlink 1.1s ease-in-out infinite; }
+
+/* Floating action buttons (✎ edit / ✕ delete) on the selected block */
+.fab-btn circle { transition: fill 0.12s; }
+.fab-edit:hover circle { fill: var(--primary-dark); }
+.fab-del:hover  circle { fill: #e07d92; }
 
 /* ── Selection Toolbar (top of canvas bar, Canva-style) ── */
 #sel-toolbar {
@@ -873,9 +938,17 @@ footer a:hover { color: var(--primary); }
   .color-swatch { width: 32px; height: 32px; }
   input[type="color"] { width: 40px; height: 40px; }
   .font-select { min-width: 120px; font-size: 14px; padding: 8px 10px; }
+  /* On small screens the buttons carry the meaning — drop the keyboard hint */
+  .text-input-hint { display: none; }
+  .ti-btn { padding: 10px 12px; min-height: 48px; }
+  .text-input-lead { display: none; }
 }
 @media (max-width: 480px) {
   .logo-title { display: none; }
+  /* Icon-only action buttons to save room on phones */
+  .ti-btn span:not(.material-symbols-rounded) { display: none; }
+  .ti-btn { padding: 10px; }
+  #text-input-el { min-width: 120px; width: 150px; }
 }
 
 /* ── Slideshow / Presentation Mode ── */
@@ -1169,7 +1242,13 @@ footer a:hover { color: var(--primary); }
     <!-- Selection toolbar — Canva-style: fixed at top of canvas -->
     <div id="sel-toolbar">
       <span class="sel-ctrl-label" data-i18n="fontSize">크기</span>
+      <button class="size-step-btn" id="sel-size-down" type="button" title="작게" data-i18n-title="sizeDown">
+        <span class="material-symbols-rounded">remove</span>
+      </button>
       <input type="range" id="sel-font-size" min="14" max="80" value="32" style="width:70px;">
+      <button class="size-step-btn" id="sel-size-up" type="button" title="크게" data-i18n-title="sizeUp">
+        <span class="material-symbols-rounded">add</span>
+      </button>
       <span class="fs-label" id="sel-fs-val">32</span>
 
       <span class="sel-ctrl-label" data-i18n="color">색</span>
@@ -1211,7 +1290,22 @@ footer a:hover { color: var(--primary); }
     <!-- Text Input Dock — docked bar at top of canvas, never floats over work area -->
     <div id="text-overlay">
       <div id="text-input-bar">
+        <span class="material-symbols-rounded text-input-lead">edit</span>
         <input type="text" id="text-input-el" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+        <div class="text-input-actions">
+          <button class="ti-btn ti-next" id="ti-next" type="button" title="다음 글자 (스페이스)">
+            <span class="material-symbols-rounded">arrow_forward</span>
+            <span data-i18n="inputNext">다음 글자</span>
+          </button>
+          <button class="ti-btn ti-done" id="ti-done" type="button" title="끝내기 (Enter)">
+            <span class="material-symbols-rounded">check</span>
+            <span data-i18n="inputDone">완료</span>
+          </button>
+          <button class="ti-btn ti-cancel" id="ti-cancel" type="button" title="취소 (Esc)">
+            <span class="material-symbols-rounded">close</span>
+            <span data-i18n="inputCancel">취소</span>
+          </button>
+        </div>
         <div class="text-input-hint" id="text-input-hint">스페이스: 다음 글자 · Enter: 끝내기</div>
       </div>
     </div>
@@ -1344,14 +1438,16 @@ const TRANSLATIONS = {
     saveJson: 'JSON으로 저장', loadJson: 'JSON 불러오기',
     copyImage: '이미지 클립보드 복사', downloadImage: '이미지 다운로드', shareLink: '공유 링크 복사',
     helpTitle: '사용 방법', exampleBtn: '예시 보기',
-    help1: '빈 곳을 콕! 눌러서 가사를 써요. 스페이스로 다음 글자, Enter로 끝내요.',
+    help1: '빈 곳을 콕! 눌러서 가사를 써요. [다음 글자]·[완료] 버튼이나 스페이스·Enter로 이어 써요.',
     help2: '글자를 위·아래로 옮기면 음높이가 바뀌어요. 위로 갈수록 높은 소리!',
-    help3: '글자를 누르면 위쪽 메뉴에서 크기·색깔·글꼴을 바꿀 수 있어요. ✎ 버튼을 누르면 글자를 다시 써요.',
+    help3: '글자를 누르면 위쪽 메뉴에서 크기·색깔·글꼴을 바꿀 수 있어요. 글자 옆 ✎ 버튼이나 글자를 한 번 더 누르면 다시 쓸 수 있어요.',
     help4: "실수했을 땐 위쪽의 ↶ 버튼! 다시 하고 싶으면 ↷ 버튼이에요.",
     help5: "'가사 쓰기' 탭에서는 원곡 가사를 그대로 가져온 뒤, 글자만 바꿔 새 가사를 만들 수 있어요.",
     originalScore: '원곡 악보', newLyrics: '새 가사',
     fontSize: '크기', color: '색', slide: '슬라이드', editText: '편집',
     inputHint: '스페이스: 다음 글자 · Enter: 끝내기',
+    inputNext: '다음 글자', inputDone: '완료', inputCancel: '취소',
+    sizeDown: '작게', sizeUp: '크게',
     loadOriginal: '원곡 가사 불러오기',
     loadOriginalTitle: '원곡 가사를 새 가사로 복사',
     confirmOverwriteNew: '새 가사가 이미 있습니다. 덮어쓸까요?',
@@ -1365,7 +1461,8 @@ const TRANSLATIONS = {
     undoTitle: '실행 취소 (Ctrl+Z)', redoTitle: '다시 실행 (Ctrl+Shift+Z)',
     clearAll: '모두 지우기', clearAllTitle: '캔버스를 모두 지우고 초기화합니다',
     confirmClearAll: '캔버스의 모든 내용을 지울까요? 되돌릴 수 없어요.',
-    toastCleared: '캔버스가 초기화됐어요.'
+    toastCleared: '캔버스가 초기화됐어요.',
+    toastDeleted: '글자를 지웠어요 (↶ 로 되돌리기)'
   },
   en: {
     appTitle: 'Easy Score',
@@ -1375,14 +1472,16 @@ const TRANSLATIONS = {
     saveJson: 'Save as JSON', loadJson: 'Load JSON',
     copyImage: 'Copy image to clipboard', downloadImage: 'Download image', shareLink: 'Copy share link',
     helpTitle: 'How to use', exampleBtn: 'Show example',
-    help1: 'Tap an empty spot to type lyrics. Press Space for the next word, Enter to finish.',
+    help1: 'Tap an empty spot to type lyrics. Use the [Next]·[Done] buttons, or Space·Enter, to keep going.',
     help2: 'Drag a word up or down to change its pitch — higher means a higher sound.',
-    help3: 'Tap a word to use the top toolbar for size, color, and font. Use the ✎ Edit button to rewrite the text.',
+    help3: 'Tap a word to change its size, color, and font in the top bar. Tap the ✎ button beside it (or tap the word again) to rewrite the text.',
     help4: 'Made a mistake? Tap the ↶ button to undo, ↷ to redo.',
     help5: 'In the Write tab, copy the original lyrics and just swap the words to make a new version.',
     originalScore: 'Original', newLyrics: 'New lyrics',
     fontSize: 'Size', color: 'Color', slide: 'Slide', editText: 'Edit',
     inputHint: 'Space: next · Enter: done',
+    inputNext: 'Next', inputDone: 'Done', inputCancel: 'Cancel',
+    sizeDown: 'Smaller', sizeUp: 'Bigger',
     loadOriginal: 'Copy original lyrics',
     loadOriginalTitle: 'Copy original lyrics to the new-lyrics panel',
     confirmOverwriteNew: 'The new-lyrics panel already has blocks. Overwrite them?',
@@ -1394,6 +1493,7 @@ const TRANSLATIONS = {
     clearAll: 'Clear all', clearAllTitle: 'Clear canvas and reset',
     confirmClearAll: 'Clear everything on the canvas? This cannot be undone.',
     toastCleared: 'Canvas cleared.',
+    toastDeleted: 'Deleted (↶ to undo)',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
     toastExample: 'Example loaded!'
@@ -1406,14 +1506,16 @@ const TRANSLATIONS = {
     saveJson: 'JSONで保存', loadJson: 'JSON読み込み',
     copyImage: '画像をクリップボードにコピー', downloadImage: '画像をダウンロード', shareLink: '共有リンクをコピー',
     helpTitle: '使い方', exampleBtn: '例を見る',
-    help1: '空いている所をタップして歌詞を入力。スペースで次の文字、Enterで終了。',
+    help1: '空いている所をタップして歌詞を入力。[次の文字]・[完了]ボタンか、スペース・Enterで続けて書けます。',
     help2: '文字を上下にドラッグすると音の高さが変わります。上ほど高い音！',
-    help3: '文字をタップすると、上のバーで大きさ・色・フォントを変えられます。✎ ボタンで文字を編集。',
+    help3: '文字をタップすると上のバーで大きさ・色・フォントを変えられます。文字の横の ✎ ボタン、またはもう一度タップで書き直せます。',
     help4: '間違えたら上の ↶ ボタン、やり直したいときは ↷ ボタン。',
     help5: '「歌詞を書く」タブでは原曲歌詞をコピーして、文字だけ書き換えて新しい歌詞が作れます。',
     originalScore: '原曲', newLyrics: '新しい歌詞',
     fontSize: 'サイズ', color: '色', slide: 'スライド', editText: '編集',
     inputHint: 'スペース: 次の文字 · Enter: 終了',
+    inputNext: '次の文字', inputDone: '完了', inputCancel: 'キャンセル',
+    sizeDown: '小さく', sizeUp: '大きく',
     loadOriginal: '原曲歌詞を読込',
     loadOriginalTitle: '原曲歌詞を新しい歌詞欄に複製',
     confirmOverwriteNew: '新しい歌詞欄に既に内容があります。上書きしますか？',
@@ -1425,6 +1527,7 @@ const TRANSLATIONS = {
     clearAll: '全て消去', clearAllTitle: 'キャンバスを初期化します',
     confirmClearAll: 'キャンバスの内容を全て消去しますか？元に戻せません。',
     toastCleared: 'キャンバスを初期化しました。',
+    toastDeleted: '文字を削除しました (↶ で元に戻す)',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
     toastExample: 'サンプルを読み込みました！'
@@ -1751,8 +1854,57 @@ function makeSelectionOverlay(block, svgEl, isMulti) {
     if (block.slide) {
       g.appendChild(makeHandle(svgX + rw, svgY + dy, 'slide-end'));
     }
+    // Floating buttons at the block's top corners — one tap to edit (✎) or delete (✕)
+    const editable = !(currentTab === 'write' && block.panel === 'original');
+    if (editable) {
+      const fr = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 17 : 15;
+      const ey = Math.max(fr + 1, ry - 14);
+      let ex = rx + rw + 2;   // edit: top-right
+      let dx = rx - 2;        // delete: top-left
+      const minGap = 2 * fr + 8;
+      if (ex - dx < minGap) { const mid = (ex + dx) / 2; ex = mid + minGap / 2; dx = mid - minGap / 2; }
+      ex = Math.min(getCanvasWidth() - fr - 2, ex);
+      dx = Math.max(fr + 2, dx);
+      g.appendChild(makeFab(ex, ey, block.id, 'edit'));
+      g.appendChild(makeFab(dx, ey, block.id, 'delete'));
+    }
   }
   svgEl.appendChild(g);
+  return g;
+}
+
+function makeFab(cx, cy, blockId, kind) {
+  const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const r = isTouch ? 17 : 15;
+  const isDel = kind === 'delete';
+  const attr  = isDel ? 'data-del-btn' : 'data-edit-btn';
+  const fill  = isDel ? '#F4A6B7' : '#5B8DEF';
+  const glyph = isDel ? '✕' : '✎';
+  const label = isDel ? '글자 삭제' : '글자 편집';
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class', 'fab-btn ' + (isDel ? 'fab-del' : 'fab-edit'));
+  g.setAttribute(attr, blockId);
+  g.setAttribute('cursor', 'pointer');
+  g.setAttribute('role', 'button');
+  g.setAttribute('aria-label', label);
+
+  const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
+  c.setAttribute('fill', fill); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2.5');
+  c.setAttribute(attr, blockId);
+  c.setAttribute('pointer-events', 'all');
+  g.appendChild(c);
+
+  const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+  tx.setAttribute('x', cx); tx.setAttribute('y', cy + 1);
+  tx.setAttribute('text-anchor', 'middle');
+  tx.setAttribute('dominant-baseline', 'central');
+  tx.setAttribute('font-size', isDel ? r * 0.95 : r * 1.05);
+  tx.setAttribute('fill', '#fff');
+  tx.setAttribute('pointer-events', 'none');
+  tx.textContent = glyph;
+  g.appendChild(tx);
   return g;
 }
 
@@ -1933,6 +2085,32 @@ function setupSvgInteraction(svgEl, panel) {
     if (e.button !== 0) return; // left button only
     hasDragged = false;
 
+    // Floating ✎ edit button → open text editing immediately
+    const editFab = e.target.closest('[data-edit-btn]');
+    if (editFab) {
+      const id = parseInt(editFab.getAttribute('data-edit-btn'));
+      const block = state.blocks.find(b => b.id === id);
+      if (block) beginTextInput(svgEl, block, block.panel);
+      e.preventDefault(); e.stopPropagation();
+      return;
+    }
+
+    // Floating ✕ delete button → remove the block (undo available)
+    const delFab = e.target.closest('[data-del-btn]');
+    if (delFab) {
+      const id = parseInt(delFab.getAttribute('data-del-btn'));
+      if (state.blocks.some(b => b.id === id)) {
+        pushHistory();
+        state.blocks = state.blocks.filter(b => b.id !== id);
+        deselectAll();
+        renderBlocks();
+        updateEmptyHint();
+        showToast(t('toastDeleted'));
+      }
+      e.preventDefault(); e.stopPropagation();
+      return;
+    }
+
     const handle = e.target.closest('[data-handle]');
     if (handle && selectedId !== null) {
       const block = state.blocks.find(b => b.id === selectedId);
@@ -1965,6 +2143,10 @@ function setupSvgInteraction(svgEl, panel) {
         return;
       }
 
+      // Was this block already the sole selection? If so, a tap (no drag)
+      // means "edit" — a reliable double-tap replacement for touch.
+      const wasSelectedSolo = selectedIds.size === 1 && selectedIds.has(id);
+
       if (!selectedIds.has(id)) {
         // Click an unselected block → make it the sole selection
         selectBlock(id);
@@ -1990,7 +2172,8 @@ function setupSvgInteraction(svgEl, panel) {
       dragState = {
         type: 'move-multi', blockId: id,
         startX: pt.x, startY: pt.y,
-        origPositions, origSvgPositions, svgEl
+        origPositions, origSvgPositions, svgEl,
+        wasSelectedSolo, tappedId: id
       };
       blockGroup.classList.add('dragging');
       svgEl.classList.add('dragging-active');
@@ -2181,6 +2364,13 @@ function setupSvgInteraction(svgEl, panel) {
       positionSelToolbar();
     } else {
       cancelHistory(); // tap-without-drag on a block: no state change
+      // Tap again on an already-selected single block → enter edit mode
+      if (dragState.type === 'move-multi' && dragState.wasSelectedSolo && dragState.tappedId != null) {
+        const block = state.blocks.find(b => b.id === dragState.tappedId);
+        if (block && !(currentTab === 'write' && block.panel === 'original')) {
+          beginTextInput(dragState.svgEl, block, block.panel);
+        }
+      }
     }
     dragState = null;
   });
@@ -2307,8 +2497,9 @@ function createTextPreview(svgEl, blockX, blockYFrac, fs, font, color) {
   _previewTextEl.setAttribute('font-family', `'${font}', 'Pretendard GOV', sans-serif`);
   _previewTextEl.setAttribute('font-size', fs);
   _previewTextEl.setAttribute('fill', color);
-  _previewTextEl.setAttribute('opacity', '0.5');
+  _previewTextEl.setAttribute('opacity', '0.85');
   _previewTextEl.setAttribute('pointer-events', 'none');
+  _previewTextEl.setAttribute('class', 'preview-blink');
   _previewTextEl.textContent = '|';
   const grp = (svgEl === learnSvg) ? textPreviewLearn : textPreviewWriteBot;
   grp?.appendChild(_previewTextEl);
@@ -2514,8 +2705,36 @@ textInputEl.addEventListener('keydown', (e) => {
 
 textInputEl.addEventListener('input', autoResizeInput);
 
+let _suppressBlurCommit = false;
 textInputEl.addEventListener('blur', () => {
-  setTimeout(() => { if (!isComposing) commitTextInput(); }, 220);
+  setTimeout(() => { if (!isComposing && !_suppressBlurCommit) commitTextInput(); }, 220);
+});
+
+/* On-screen buttons so touch users (no physical keyboard) can write
+   word-by-word. preventDefault on pointerdown keeps the native focus on the
+   input (so no stray blur-commit fires); if a Korean/Japanese IME composition
+   is in progress we finalize it with a quick blur/refocus first. */
+function bindInputBtn(id, fn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    _suppressBlurCommit = true;
+    if (isComposing) { textInputEl.blur(); textInputEl.focus(); }
+    fn();
+    setTimeout(() => { _suppressBlurCommit = false; }, 350);
+  });
+}
+bindInputBtn('ti-next', () => {
+  if (textInputEl.value.trim() !== '') commitTextInput(true /* continue */);
+});
+bindInputBtn('ti-done', () => commitTextInput());
+bindInputBtn('ti-cancel', () => {
+  cancelNextCommit = true;
+  textOverlay.classList.remove('active');
+  textInputEl.value = '';
+  clearTextPreview();
+  editingBlock = null;
 });
 
 
@@ -2539,6 +2758,21 @@ selFontSize.addEventListener('input', () => {
   renderBlocks(); positionSelToolbar();
 });
 selFontSize.addEventListener('change', () => commitHistory());
+
+// Big +/- size steppers — easier than the thin slider for small fingers
+function stepFontSize(delta) {
+  if (selectedIds.size === 0) return;
+  pushHistory();
+  forEachSelected(b => {
+    b.fontSize = Math.max(14, Math.min(80, (b.fontSize || DEFAULT_FONT_SIZE) + delta));
+  });
+  const primary = state.blocks.find(b => b.id === selectedId);
+  if (primary) updateSelToolbar(primary);
+  renderBlocks();
+  positionSelToolbar();
+}
+document.getElementById('sel-size-down')?.addEventListener('click', () => stepFontSize(-4));
+document.getElementById('sel-size-up')?.addEventListener('click', () => stepFontSize(4));
 
 selColor.addEventListener('input', () => {
   beginHistory();
