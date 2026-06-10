@@ -1124,13 +1124,13 @@ footer a:hover { color: var(--primary); }
     </button>
 
     <!-- Help -->
-    <button class="icon-btn" id="btn-help" title="도움말">
+    <button class="icon-btn" id="btn-help" title="도움말" data-i18n-title="helpBtn">
       <span class="material-symbols-rounded">help</span>
     </button>
 
     <!-- Save dropdown -->
     <div class="dropdown-wrap">
-      <button class="icon-btn" id="btn-save" title="저장">
+      <button class="icon-btn" id="btn-save" title="저장" data-i18n-title="saveBtn">
         <span class="material-symbols-rounded">save</span>
       </button>
       <div class="dropdown-menu" id="save-menu">
@@ -1151,7 +1151,7 @@ footer a:hover { color: var(--primary); }
 
     <!-- Export dropdown -->
     <div class="dropdown-wrap">
-      <button class="icon-btn" id="btn-export" title="내보내기">
+      <button class="icon-btn" id="btn-export" title="내보내기" data-i18n-title="exportBtn">
         <span class="material-symbols-rounded">share</span>
       </button>
       <div class="dropdown-menu" id="export-menu">
@@ -1171,7 +1171,7 @@ footer a:hover { color: var(--primary); }
     </div>
 
     <!-- Slideshow / Presentation -->
-    <button class="icon-btn" id="btn-slideshow" title="슬라이드 발표">
+    <button class="icon-btn" id="btn-slideshow" title="슬라이드 발표" data-i18n-title="slideshowBtn">
       <span class="material-symbols-rounded">slideshow</span>
     </button>
 
@@ -1228,11 +1228,11 @@ footer a:hover { color: var(--primary); }
     <div class="ctrl-group">
       <span class="ctrl-label" data-i18n="measures">마디</span>
       <div class="measure-ctrl">
-        <button class="measure-btn" id="measure-minus" title="마디 빼기">
+        <button class="measure-btn" id="measure-minus" title="마디 빼기" data-i18n-title="measureMinus">
           <span class="material-symbols-rounded">remove</span>
         </button>
         <span class="measure-count" id="measure-count">4</span>
-        <button class="measure-btn" id="measure-plus" title="마디 더하기">
+        <button class="measure-btn" id="measure-plus" title="마디 더하기" data-i18n-title="measurePlus">
           <span class="material-symbols-rounded">add</span>
         </button>
       </div>
@@ -1337,7 +1337,7 @@ footer a:hover { color: var(--primary); }
     <div id="learn-canvas-wrap" class="canvas-wrapper">
       <div class="canvas-empty-hint" id="learn-empty-hint">
         <span class="material-symbols-rounded">edit_note</span>
-        <p>클릭하면 가사를 입력할 수 있어요</p>
+        <p data-i18n="emptyHint">클릭하면 가사를 입력할 수 있어요</p>
       </div>
       <svg class="score-canvas" id="learn-svg" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -1370,6 +1370,10 @@ footer a:hover { color: var(--primary); }
             <span class="material-symbols-rounded">south</span>
             <span data-i18n="loadOriginal">원곡 가사 불러오기</span>
           </button>
+        </div>
+        <div class="canvas-empty-hint" id="write-empty-hint">
+          <span class="material-symbols-rounded">edit_note</span>
+          <p data-i18n="emptyHintNew">여기를 클릭해 새 가사를 써요</p>
         </div>
         <svg class="score-canvas" id="write-svg-bottom" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -1421,7 +1425,7 @@ footer a:hover { color: var(--primary); }
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-title" style="margin-bottom:14px;">
       <span class="material-symbols-rounded" style="color:#E05252;">delete_sweep</span>
-      <span data-i18n="clearAll">모두 지우기</span>
+      <span id="confirm-title" data-i18n="clearAll">모두 지우기</span>
     </div>
     <p id="confirm-msg" data-i18n="confirmClearAll" style="font-size:15px; line-height:1.6; color:var(--ink-soft); margin-bottom:24px;">캔버스의 모든 내용을 지울까요? 되돌릴 수 없어요.</p>
     <div style="display:flex; gap:10px; justify-content:flex-end;">
@@ -1499,9 +1503,17 @@ const TRANSLATIONS = {
     toastNoOriginal: '원곡 악보에 가사가 없어요',
     undoTitle: '실행 취소 (Ctrl+Z)', redoTitle: '다시 실행 (Ctrl+Shift+Z)',
     clearAll: '모두 지우기', clearAllTitle: '캔버스를 모두 지우고 초기화합니다',
-    confirmClearAll: '캔버스의 모든 내용을 지울까요? 되돌릴 수 없어요.',
-    toastCleared: '캔버스가 초기화됐어요.',
-    toastDeleted: '글자를 지웠어요 (↶ 로 되돌리기)'
+    confirmClearAll: '캔버스의 모든 내용을 지울까요? 지운 뒤에도 ↶ 버튼으로 되돌릴 수 있어요.',
+    toastCleared: '캔버스를 지웠어요 (↶ 로 되돌리기)',
+    toastDeleted: '글자를 지웠어요 (↶ 로 되돌리기)',
+    invalidJson: '파일을 읽지 못했어요. 악보 JSON 파일이 맞는지 확인해 주세요.',
+    ssEmpty: '슬라이드로 보여줄 내용이 없어요',
+    emptyHint: '클릭하면 가사를 입력할 수 있어요',
+    emptyHintNew: '여기를 클릭해 새 가사를 써요',
+    helpBtn: '도움말', saveBtn: '저장', exportBtn: '내보내기', slideshowBtn: '슬라이드 발표',
+    measureMinus: '마디 빼기', measurePlus: '마디 더하기',
+    overwriteOk: '덮어쓰기',
+    fabEdit: '글자 편집', fabDelete: '글자 삭제'
   },
   en: {
     appTitle: 'Easy Score',
@@ -1531,9 +1543,17 @@ const TRANSLATIONS = {
     toastNoOriginal: 'The original score has no lyrics yet',
     undoTitle: 'Undo (Ctrl+Z)', redoTitle: 'Redo (Ctrl+Shift+Z)',
     clearAll: 'Clear all', clearAllTitle: 'Clear canvas and reset',
-    confirmClearAll: 'Clear everything on the canvas? This cannot be undone.',
-    toastCleared: 'Canvas cleared.',
+    confirmClearAll: 'Clear everything on the canvas? You can still bring it back with ↶.',
+    toastCleared: 'Canvas cleared (↶ to undo)',
     toastDeleted: 'Deleted (↶ to undo)',
+    invalidJson: "Couldn't read the file. Please check it's an Easy Score JSON file.",
+    ssEmpty: 'Nothing to show as slides yet',
+    emptyHint: 'Click anywhere to start writing lyrics',
+    emptyHintNew: 'Click here to write new lyrics',
+    helpBtn: 'Help', saveBtn: 'Save', exportBtn: 'Export', slideshowBtn: 'Presentation',
+    measureMinus: 'Remove measure', measurePlus: 'Add measure',
+    overwriteOk: 'Overwrite',
+    fabEdit: 'Edit text', fabDelete: 'Delete text',
     toastCopied: 'Copied!', toastSaved: 'Saved!', toastLoaded: 'Loaded!',
     toastLinkCopied: 'Link copied!', toastImgCopied: 'Image copied!',
     toastExample: 'Example loaded!'
@@ -1566,9 +1586,17 @@ const TRANSLATIONS = {
     toastNoOriginal: '原曲にまだ歌詞がありません',
     undoTitle: '元に戻す (Ctrl+Z)', redoTitle: 'やり直し (Ctrl+Shift+Z)',
     clearAll: '全て消去', clearAllTitle: 'キャンバスを初期化します',
-    confirmClearAll: 'キャンバスの内容を全て消去しますか？元に戻せません。',
-    toastCleared: 'キャンバスを初期化しました。',
+    confirmClearAll: 'キャンバスの内容を全て消去しますか？消した後も ↶ ボタンで元に戻せます。',
+    toastCleared: 'キャンバスを消去しました (↶ で元に戻す)',
     toastDeleted: '文字を削除しました (↶ で元に戻す)',
+    invalidJson: 'ファイルを読み込めませんでした。楽譜のJSONファイルか確認してください。',
+    ssEmpty: 'スライドで見せる内容がまだありません',
+    emptyHint: 'クリックすると歌詞を入力できます',
+    emptyHintNew: 'ここをクリックして新しい歌詞を書きます',
+    helpBtn: 'ヘルプ', saveBtn: '保存', exportBtn: '共有', slideshowBtn: 'スライド発表',
+    measureMinus: '小節を減らす', measurePlus: '小節を増やす',
+    overwriteOk: '上書き',
+    fabEdit: '文字を編集', fabDelete: '文字を削除',
     toastCopied: 'コピーしました！', toastSaved: '保存しました！', toastLoaded: '読み込みました！',
     toastLinkCopied: 'リンクをコピーしました！', toastImgCopied: '画像をコピーしました！',
     toastExample: 'サンプルを読み込みました！'
@@ -1600,6 +1628,8 @@ function applyI18n() {
   if (inp) inp.style.fontFamily = `'Pretendard GOV', sans-serif`;
   const hint = document.getElementById('text-input-hint');
   if (hint) hint.textContent = t('inputHint');
+  // Icon-only buttons: expose the tooltip text to screen readers too
+  document.querySelectorAll('button[title]').forEach(el => el.setAttribute('aria-label', el.title));
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1924,7 +1954,7 @@ function makeFab(cx, cy, blockId, kind) {
   const attr  = isDel ? 'data-del-btn' : 'data-edit-btn';
   const fill  = isDel ? '#F4A6B7' : '#5B8DEF';
   const glyph = isDel ? '✕' : '✎';
-  const label = isDel ? '글자 삭제' : '글자 편집';
+  const label = isDel ? t('fabDelete') : t('fabEdit');
 
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
   g.setAttribute('class', 'fab-btn ' + (isDel ? 'fab-del' : 'fab-edit'));
@@ -2088,6 +2118,10 @@ function positionSelToolbar() {
 let dragState = null;
 let hasDragged = false;
 let _dragRafId = null;
+// What the gesture's pointerdown landed on. The click event is often retargeted
+// to the <svg> (pointer capture / re-render), so it can't tell "tap on a handle"
+// from "tap on empty canvas" by itself — this does.
+let _pointerDownKind = null; // 'block' | 'handle' | 'fab' | 'empty'
 
 function getSvgPoint(svgEl, clientX, clientY) {
   const rect = svgEl.getBoundingClientRect();
@@ -2100,7 +2134,17 @@ function setupSvgInteraction(svgEl, panel) {
   svgEl.addEventListener('click', (e) => {
     if (panel === 'top') return;
     if (hasDragged) return;
-    if (textOverlay.classList.contains('active')) return;
+    if (textOverlay.classList.contains('active')) {
+      // Tap-to-edit opens the input from pointerup, and the same gesture's
+      // click arrives right after (retargeted to the svg by pointer capture).
+      // Ignore clicks in that window so they don't close the just-opened editor.
+      if (Date.now() - _inputOpenedAt < 300) return;
+      // Typing in progress: commit it, then fall through so the click
+      // opens a fresh input where the user tapped (no dead click).
+      _suppressBlurCommit = true;
+      commitTextInput();
+      setTimeout(() => { _suppressBlurCommit = false; }, 350);
+    }
 
     const blockGroup = e.target.closest('.block-group');
     if (e.detail >= 2) {
@@ -2114,8 +2158,11 @@ function setupSvgInteraction(svgEl, panel) {
         e.preventDefault(); e.stopPropagation();
       }
     } else {
-      // Single click on empty canvas: create new block at click position
+      // Single click on empty canvas: create new block at click position.
+      // Only when the gesture really started on empty canvas — taps on
+      // handles/buttons/blocks get retargeted here and must not open an input.
       if (blockGroup) return;
+      if (_pointerDownKind && _pointerDownKind !== 'empty') return;
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
       const { blockX, blockY } = svgToBlockCoords(pt.x, pt.y);
       beginTextInput(svgEl, null, panel === 'bottom' ? 'new' : 'original', blockX, blockY);
@@ -2128,10 +2175,12 @@ function setupSvgInteraction(svgEl, panel) {
     if (panel === 'top') return;
     if (e.button !== 0) return; // left button only
     hasDragged = false;
+    _pointerDownKind = 'empty';
 
     // Floating ✎ edit button → open text editing immediately
     const editFab = e.target.closest('[data-edit-btn]');
     if (editFab) {
+      _pointerDownKind = 'fab';
       const id = parseInt(editFab.getAttribute('data-edit-btn'));
       const block = state.blocks.find(b => b.id === id);
       if (block) beginTextInput(svgEl, block, block.panel);
@@ -2142,6 +2191,7 @@ function setupSvgInteraction(svgEl, panel) {
     // Floating ✕ delete button → remove the block (undo available)
     const delFab = e.target.closest('[data-del-btn]');
     if (delFab) {
+      _pointerDownKind = 'fab';
       const id = parseInt(delFab.getAttribute('data-del-btn'));
       if (state.blocks.some(b => b.id === id)) {
         pushHistory();
@@ -2157,6 +2207,7 @@ function setupSvgInteraction(svgEl, panel) {
 
     const handle = e.target.closest('[data-handle]');
     if (handle && selectedId !== null) {
+      _pointerDownKind = 'handle';
       const block = state.blocks.find(b => b.id === selectedId);
       if (!block) return;
       const pt = getSvgPoint(svgEl, e.clientX, e.clientY);
@@ -2176,6 +2227,7 @@ function setupSvgInteraction(svgEl, panel) {
 
     const blockGroup = e.target.closest('.block-group');
     if (blockGroup) {
+      _pointerDownKind = 'block';
       const id = parseInt(blockGroup.dataset.id);
       const block = state.blocks.find(b => b.id === id);
       if (!block) return;
@@ -2414,6 +2466,14 @@ function setupSvgInteraction(svgEl, panel) {
         if (block && !(currentTab === 'write' && block.panel === 'original')) {
           beginTextInput(dragState.svgEl, block, block.panel);
         }
+      } else if ((dragState.type === 'left-handle' || dragState.type === 'right-handle')
+                 && selectedIds.size === 1) {
+        // The resize handles sit on the block's edges, so a re-tap aimed at the
+        // block often lands on one. No drag happened → treat it as tap-to-edit.
+        const block = state.blocks.find(b => b.id === dragState.blockId);
+        if (block && !(currentTab === 'write' && block.panel === 'original')) {
+          beginTextInput(dragState.svgEl, block, block.panel);
+        }
       }
     }
     dragState = null;
@@ -2518,6 +2578,7 @@ let inputOriginY = 0;
 
 let isComposing = false;
 let cancelNextCommit = false;
+let _inputOpenedAt = 0; // guards the same-gesture click right after tap-to-edit
 
 function autoResizeInput() {
   const chars = Array.from(textInputEl.value).length || 1;
@@ -2562,6 +2623,10 @@ function beginTextInput(svgEl, blockOrNull, panel, newBlockX, newBlockY) {
   editingPanel  = panel;
   editingSvg    = svgEl;
   cancelNextCommit = false;
+  _inputOpenedAt = Date.now();
+  // A pending blur-commit from the previous focus would close this fresh
+  // editor 220ms from now (re-tap / double-tap race) — cancel it.
+  clearTimeout(_blurCommitTimer);
 
   const font = getCanvasFont();
   let fs;
@@ -2715,7 +2780,9 @@ function commitTextInput(andThenContinue = false) {
 // Show/hide the "double-click to start" hint based on block count
 function updateEmptyHint() {
   const hint = document.getElementById('learn-empty-hint');
-  if (hint) hint.style.display = state.blocks.filter(b => b.panel === 'original').length === 0 ? '' : 'none';
+  if (hint) hint.style.display = state.blocks.some(b => b.panel === 'original') ? 'none' : '';
+  const hintNew = document.getElementById('write-empty-hint');
+  if (hintNew) hintNew.style.display = state.blocks.some(b => b.panel === 'new') ? 'none' : '';
 }
 
 textInputEl.addEventListener('compositionstart', () => { isComposing = true; });
@@ -2754,8 +2821,10 @@ textInputEl.addEventListener('keydown', (e) => {
 textInputEl.addEventListener('input', autoResizeInput);
 
 let _suppressBlurCommit = false;
+let _blurCommitTimer = null;
 textInputEl.addEventListener('blur', () => {
-  setTimeout(() => { if (!isComposing && !_suppressBlurCommit) commitTextInput(); }, 220);
+  clearTimeout(_blurCommitTimer);
+  _blurCommitTimer = setTimeout(() => { if (!isComposing && !_suppressBlurCommit) commitTextInput(); }, 220);
 });
 
 /* On-screen buttons so touch users (no physical keyboard) can write
@@ -2862,6 +2931,7 @@ selDelBtn.addEventListener('click', () => {
   deselectAll();
   renderBlocks();
   updateEmptyHint();
+  showToast(t('toastDeleted'));
 });
 
 if (selFont) {
@@ -3010,6 +3080,7 @@ measureMinusBtn.addEventListener('click', () => { pushHistory(); setMeasures(sta
 ══════════════════════════════════════════════════════ */
 document.getElementById('song-title').addEventListener('input', (e) => {
   state.songTitle = e.target.value;
+  scheduleSave(); // title alone never triggers a re-render, so save it explicitly
 });
 
 /* ══════════════════════════════════════════════════════
@@ -3018,6 +3089,7 @@ document.getElementById('song-title').addEventListener('input', (e) => {
 document.getElementById('lang-select').addEventListener('change', (e) => {
   lang = e.target.value;
   state.lang = lang;
+  try { localStorage.setItem('easyscore-lang', lang); } catch(e2) {}
   applyI18n();
   renderBlocks();
 });
@@ -3087,7 +3159,7 @@ fileInput.addEventListener('change', (e) => {
       pushHistory();
       applyLoadedState(loaded);
       showToast(t('toastLoaded'));
-    } catch { alert('Invalid JSON'); }
+    } catch { showToast(t('invalidJson')); }
   };
   reader.readAsText(file);
   fileInput.value = '';
@@ -3339,12 +3411,28 @@ function doClearAll() {
   showToast(t('toastCleared'));
 }
 
-/* Clear-all confirmation popup (custom, kid-friendly — replaces native confirm) */
+/* Confirmation popup (custom, kid-friendly — replaces native confirm).
+   Generic: pass title/message/ok-label keys and an onOk callback.
+   Cancel gets focus on open so a stray Enter never confirms a destructive action. */
 const confirmModal = document.getElementById('confirm-modal');
-function requestClearAll() { confirmModal.classList.add('open'); }
-function closeConfirm()    { confirmModal.classList.remove('open'); }
+let _confirmOnOk = null;
+function requestConfirm(opts) {
+  opts = opts || {};
+  document.getElementById('confirm-title').textContent = t(opts.titleKey || 'clearAll');
+  document.getElementById('confirm-msg').textContent   = t(opts.msgKey   || 'confirmClearAll');
+  document.getElementById('confirm-ok').textContent    = t(opts.okKey    || 'clearAll');
+  _confirmOnOk = opts.onOk || null;
+  confirmModal.classList.add('open');
+  requestAnimationFrame(() => document.getElementById('confirm-cancel').focus());
+}
+function requestClearAll() { requestConfirm({ onOk: doClearAll }); }
+function closeConfirm()    { confirmModal.classList.remove('open'); _confirmOnOk = null; }
 document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
-document.getElementById('confirm-ok').addEventListener('click', () => { closeConfirm(); doClearAll(); });
+document.getElementById('confirm-ok').addEventListener('click', () => {
+  const fn = _confirmOnOk;
+  closeConfirm();
+  if (fn) fn();
+});
 confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) closeConfirm(); });
 
 document.getElementById('menu-clear-all').addEventListener('click', () => {
@@ -3507,8 +3595,20 @@ function loadOriginalToNew() {
   }
   const hasNew = state.blocks.some(b => b.panel === 'new');
   if (hasNew) {
-    if (!confirm(t('confirmOverwriteNew'))) return;
+    requestConfirm({
+      titleKey: 'loadOriginal',
+      msgKey: 'confirmOverwriteNew',
+      okKey: 'overwriteOk',
+      onOk: doLoadOriginalToNew
+    });
+    return;
   }
+  doLoadOriginalToNew();
+}
+
+function doLoadOriginalToNew() {
+  const originals = state.blocks.filter(b => b.panel === 'original');
+  if (originals.length === 0) return;
   pushHistory();
   state.blocks = state.blocks.filter(b => b.panel !== 'new');
   originals.forEach(o => {
@@ -3532,10 +3632,10 @@ document.getElementById('btn-load-original').addEventListener('click', loadOrigi
    Keyboard shortcuts
 ══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
-  // Confirm popup takes priority: Esc cancels, Enter confirms
+  // Confirm popup takes priority: Esc cancels; Enter/Space go to the
+  // focused button (cancel by default) so nothing destructive fires by accident
   if (confirmModal && confirmModal.classList.contains('open')) {
-    if (e.key === 'Escape')     { closeConfirm(); e.preventDefault(); }
-    else if (e.key === 'Enter') { closeConfirm(); doClearAll(); e.preventDefault(); }
+    if (e.key === 'Escape') { closeConfirm(); e.preventDefault(); }
     return;
   }
   // Help modal: Esc closes it
@@ -3608,6 +3708,7 @@ document.addEventListener('keydown', (e) => {
       const ids = new Set(selectedIds);
       state.blocks = state.blocks.filter(b => !ids.has(b.id));
       deselectAll(); renderBlocks(); updateEmptyHint();
+      showToast(t('toastDeleted'));
       e.preventDefault(); return;
     }
 
@@ -3684,7 +3785,8 @@ function getSlideshowRows() {
     const rowBlocks = state.blocks.filter(b =>
       b.panel === panel && Math.floor(b.x / rowW) === r
     );
-    rows.push({ row: r, blocks: rowBlocks });
+    // Skip rows with no lyrics — empty white slides only confuse the audience
+    if (rowBlocks.length > 0) rows.push({ row: r, blocks: rowBlocks });
   }
   return rows;
 }
@@ -3789,7 +3891,7 @@ function fitSlideshowSvg() {
 }
 
 function updateSlideshowUI(rows) {
-  if (_ssTitle)   _ssTitle.textContent   = state.songTitle || '너를 위한 악보';
+  if (_ssTitle)   _ssTitle.textContent   = state.songTitle || t('appTitle');
   if (_ssCounter) _ssCounter.textContent = `${_slideIndex + 1} / ${rows.length}`;
   if (_ssPrev)    _ssPrev.disabled  = _slideIndex === 0;
   if (_ssNext)    _ssNext.disabled  = _slideIndex === rows.length - 1;
@@ -3814,10 +3916,11 @@ function updateSlideshowUI(rows) {
 function openSlideshow() {
   const panel = currentTab === 'learn' ? 'original' : 'new';
   if (!state.blocks.some(b => b.panel === panel)) {
-    showToast('슬라이드로 보여줄 내용이 없어요');
+    showToast(t('ssEmpty'));
     return;
   }
   const rows = getSlideshowRows();
+  if (rows.length === 0) { showToast(t('ssEmpty')); return; }
   _slideIndex = 0;
   _ssOverlay._rows = rows;
   _ssOverlay.classList.add('active');
@@ -3872,6 +3975,15 @@ window.addEventListener('resize', () => {
    Init
 ══════════════════════════════════════════════════════ */
 function init() {
+  // Restore language preference (the autosave snapshot doesn't carry it)
+  try {
+    const savedLang = localStorage.getItem('easyscore-lang');
+    if (savedLang && TRANSLATIONS[savedLang]) {
+      lang = savedLang;
+      state.lang = savedLang;
+      document.getElementById('lang-select').value = savedLang;
+    }
+  } catch(e) {}
   applyI18n();
   updateCanvasSize();
   updateMeasureUI();
@@ -3884,6 +3996,13 @@ function init() {
   renderAllGuideLines();
   renderBlocks();
   updateEmptyHint();
+  // First visit with a blank canvas → open the help guide once
+  try {
+    if (state.blocks.length === 0 && !localStorage.getItem('easyscore-visited')) {
+      localStorage.setItem('easyscore-visited', '1');
+      helpModal.classList.add('open');
+    }
+  } catch(e) {}
 }
 
 // Re-render on any viewport resize (debounced) — covers orientation changes and mobile keyboard
